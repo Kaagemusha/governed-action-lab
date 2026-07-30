@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "governed-action-policy/v1",
+  "id": "governed-action-lab-public-policy",
+  "version": "1.0.0",
+  "diagnosticFormat": "context-layer-diagnostic/v1",
+  "maxEvidenceAgeSeconds": 86400,
+  "rules": [
+    {
+      "id": "rule.inspect.read-only",
+      "actionType": "inspect_run_receipt",
+      "adapterId": "synthetic-automation",
+      "classification": "green",
+      "allowedEnvironment": "read_only",
+      "approvalRequired": false,
+      "maxApprovalLifetimeSeconds": null,
+      "requiredEvidenceOutcome": null,
+      "reversible": false,
+      "verificationRequired": true
+    },
+    {
+      "id": "rule.retry.reversible-sandbox",
+      "actionType": "retry_failed_lane",
+      "adapterId": "synthetic-automation",
+      "classification": "yellow",
+      "allowedEnvironment": "synthetic_sandbox",
+      "approvalRequired": true,
+      "maxApprovalLifetimeSeconds": 300,
+      "requiredEvidenceOutcome": "failed",
+      "reversible": true,
+      "verificationRequired": true
+    },
+    {
+      "id": "rule.delete.refuse",
+      "actionType": "delete_preserved_output",
+      "adapterId": null,
+      "classification": "red",
+      "allowedEnvironment": null,
+      "approvalRequired": false,
+      "maxApprovalLifetimeSeconds": null,
+      "requiredEvidenceOutcome": "preserved_local",
+      "reversible": false,
+      "verificationRequired": false
+    }
+  ]
+}

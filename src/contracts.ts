@@ -55,7 +55,7 @@ export const actionRequestSchema = z
       .object({
         adapterId: id,
         resourceId: id,
-        environment: z.enum(["read_only", "synthetic_sandbox", "production"]),
+        environment: id,
       })
       .strict(),
     evidence: z
