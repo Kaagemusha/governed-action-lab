@@ -10,6 +10,7 @@ import {
   OperatorApprovalProvider,
   validateAndConsumeApproval,
 } from "../src/approval.js";
+import { digestOmitting } from "../src/canonical.js";
 import type { ActionRequest, PolicyDecision } from "../src/contracts.js";
 import { actionDigest } from "../src/policy.js";
 
@@ -51,6 +52,7 @@ const decision: PolicyDecision = {
   decisionAt: "2026-07-28T09:11:00Z",
   decisionDigest: "b".repeat(64),
 };
+decision.decisionDigest = digestOmitting(decision, "decisionDigest");
 const clock = { now: () => new Date("2026-07-28T09:12:00Z") };
 
 test("approval binds request and decision and is single-use", async () => {
@@ -85,6 +87,39 @@ test("file approval storage is restrictive and parseable", async () => {
   assert.equal((await stat(path)).mode & 0o777, 0o600);
   const contents = await readFile(path, "utf8");
   assert.doesNotThrow(() => JSON.parse(contents));
+});
+
+test("file approval consumption is atomic under concurrency", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "governed-approval-race-"));
+  const store = new FileApprovalStore(join(directory, "approvals.json"));
+  const provider = new OperatorApprovalProvider(store, clock);
+  await provider.issue(request, decision, "operator", true);
+
+  const results = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      validateAndConsumeApproval(store, request, decision, clock),
+    ),
+  );
+
+  assert.equal(results.filter((result) => result.valid).length, 1);
+  assert.equal(
+    results.filter((result) => !result.valid && result.code === "replayed")
+      .length,
+    3,
+  );
+});
+
+test("operator provider rejects a decision with altered signed fields", async () => {
+  const provider = new OperatorApprovalProvider(new MemoryApprovalStore(), clock);
+  await assert.rejects(
+    provider.issue(
+      request,
+      { ...decision, decisionAt: "2026-07-28T09:11:01Z" },
+      "operator",
+      true,
+    ),
+    /digest does not match/,
+  );
 });
 
 test("operator provider cannot approve green or red decisions", async () => {

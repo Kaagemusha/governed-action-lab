@@ -18,7 +18,7 @@ function canonicalValue(value: unknown, path: string): string {
       throw new TypeError(`Non-plain object at ${path}.`);
     }
     return `{${Object.entries(value)
-      .sort(([left], [right]) => left.localeCompare(right))
+      .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
       .map(([key, item]) => {
         if (item === undefined) {
           throw new TypeError(`Undefined value at ${path}.${key}.`);

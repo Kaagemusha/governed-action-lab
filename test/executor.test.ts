@@ -75,6 +75,48 @@ test("yellow executes once with exact approval and verifies effect", async () =>
   assert.equal(state.adapter.executeCalls, 1);
 });
 
+test("a signed decision remains executable after the clock advances", async () => {
+  const action = request();
+  const state = await setup(action);
+  await new OperatorApprovalProvider(state.approvals, clock).issue(
+    action,
+    state.decision,
+    "operator",
+    true,
+  );
+  const laterClock = { now: () => new Date("2026-07-28T09:12:01Z") };
+
+  const receipt = await executeGovernedAction(action, state.decision, {
+    ...state,
+    policy,
+    evidence,
+    clock: laterClock,
+  });
+
+  assert.equal(receipt.result, "succeeded");
+  assert.equal(state.adapter.executeCalls, 1);
+});
+
+test("altered caller classification cannot select an execution path", async () => {
+  const action = request();
+  const state = await setup(action);
+  const forged = {
+    ...state.decision,
+    classification: "green" as const,
+    disposition: "allow" as const,
+  };
+
+  const receipt = await executeGovernedAction(action, forged, {
+    ...state,
+    policy,
+    evidence,
+    clock,
+  });
+
+  assert.equal(receipt.result, "stale");
+  assert.equal(state.adapter.executeCalls, 0);
+});
+
 test("missing approval, stale evidence, and changed target produce receipts without effects", async () => {
   const action = request();
   const state = await setup(action);

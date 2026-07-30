@@ -29,6 +29,10 @@ const request: ActionRequest = {
 
 test("canonical JSON sorts keys recursively and hashes deterministically", () => {
   assert.equal(canonicalJson({ b: 2, a: { d: 4, c: 3 } }), '{"a":{"c":3,"d":4},"b":2}');
+  assert.equal(
+    canonicalJson({ "\u00e4": 3, z: 1, "\u00ad": 2 }),
+    '{"z":1,"\u00ad":2,"\u00e4":3}',
+  );
   assert.equal(sha256(request), sha256(structuredClone(request)));
   assert.notEqual(sha256(request), sha256({ ...request, intent: "Changed" }));
 });

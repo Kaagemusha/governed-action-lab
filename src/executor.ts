@@ -2,6 +2,7 @@ import type { ApprovalStore } from "./approval.js";
 import { validateAndConsumeApproval } from "./approval.js";
 import type { ActionAdapter, AdapterExecution } from "./adapters/synthetic-automation.js";
 import type { ActionRequest, ExecutionReceipt, PolicyDecision, PolicyManifest } from "./contracts.js";
+import { digestOmitting } from "./canonical.js";
 import { actionDigest, evaluateAction, type Clock, type EvidenceEligibility, systemClock } from "./policy.js";
 import { createReceipt } from "./receipts.js";
 import type { ReceiptStore } from "./store.js";
@@ -32,12 +33,18 @@ export async function executeGovernedAction(
   const clock = dependencies.clock ?? systemClock;
   const startedAt = clock.now().toISOString();
   const current = await dependencies.loadCurrentState();
-  const currentDecision = evaluateAction(request, dependencies.policy, current.evidence, clock);
+  const currentDecision = evaluateAction(
+    request,
+    dependencies.policy,
+    current.evidence,
+    { now: () => new Date(decision.decisionAt) },
+  );
   const expectedHash = request.expectedState.contentHash;
   const evidenceAge =
     clock.now().getTime() - new Date(current.diagnosticAsOf).getTime();
   const staleEvidence = evidenceAge > dependencies.policy.maxEvidenceAgeSeconds * 1000;
   const decisionChanged =
+    digestOmitting(decision, "decisionDigest") !== decision.decisionDigest ||
     decision.actionDigest !== actionDigest(request) ||
     decision.decisionDigest !== currentDecision.decisionDigest ||
     decision.policy.id !== dependencies.policy.id ||
@@ -64,7 +71,7 @@ export async function executeGovernedAction(
     return receipt;
   };
 
-  if (decision.disposition === "refuse" || currentDecision.disposition === "refuse") {
+  if (currentDecision.disposition === "refuse") {
     return finish("refused", "Policy refused the action before adapter execution.");
   }
   if (decisionChanged) return finish("stale", "Policy or decision changed; a new decision is required.");
@@ -73,8 +80,13 @@ export async function executeGovernedAction(
 
   let approvalId: string | null = null;
   let compensationAuthorized = false;
-  if (decision.classification === "yellow") {
-    const approval = await validateAndConsumeApproval(dependencies.approvals, request, decision, clock);
+  if (currentDecision.classification === "yellow") {
+    const approval = await validateAndConsumeApproval(
+      dependencies.approvals,
+      request,
+      currentDecision,
+      clock,
+    );
     if (!approval.valid) {
       return finish(approval.code === "expired" ? "expired" : "refused", `Approval validation failed: ${approval.code}.`);
     }
@@ -82,7 +94,7 @@ export async function executeGovernedAction(
     compensationAuthorized = approval.grant.failureCompensationAuthorized;
   }
 
-  if (decision.classification === "green") {
+  if (currentDecision.classification === "green") {
     const execution = await dependencies.adapter.inspect(request);
     const verification = await dependencies.adapter.verify(request, execution);
     return finish(verification.passed ? "succeeded" : "failed", "Read-only preconditions passed.", {

@@ -82,9 +82,21 @@ export class FileApprovalStore implements ApprovalStore {
   }
 
   async consume(grant: ApprovalGrant): Promise<boolean> {
+    const consumedDirectory = join(dirname(this.path), ".consumed");
+    const marker = join(consumedDirectory, encodeURIComponent(grant.id));
+    await mkdir(consumedDirectory, { recursive: true, mode: 0o700 });
+    try {
+      await writeFile(marker, `${grant.grantDigest}\n`, {
+        flag: "wx",
+        mode: 0o600,
+      });
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EEXIST") return false;
+      throw error;
+    }
+
     const data = await this.read();
-    if (data.consumedIds.includes(grant.id)) return false;
-    data.consumedIds.push(grant.id);
+    if (!data.consumedIds.includes(grant.id)) data.consumedIds.push(grant.id);
     await this.write(data);
     return true;
   }
@@ -108,6 +120,9 @@ export class OperatorApprovalProvider {
     }
     if (decision.actionDigest !== actionDigest(request)) {
       throw new Error("Decision is not bound to this action request.");
+    }
+    if (digestOmitting(decision, "decisionDigest") !== decision.decisionDigest) {
+      throw new Error("Decision digest does not match its contents.");
     }
     const approvedAt = this.clock.now();
     const partial = {

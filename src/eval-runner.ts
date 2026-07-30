@@ -11,7 +11,14 @@ import {
 } from "./approval.js";
 import { SyntheticAutomationAdapter } from "./adapters/synthetic-automation.js";
 import { buildPublicDemo, recomputeImportedDecision } from "./browser-runtime.js";
-import { actionRequestSchema, type ActionRequest, type PolicyManifest } from "./contracts.js";
+import { digestOmitting } from "./canonical.js";
+import {
+  approvalGrantSchema,
+  actionRequestSchema,
+  type ActionRequest,
+  type ApprovalGrant,
+  type PolicyManifest,
+} from "./contracts.js";
 import { proposeActionFromDiagnostic } from "./context-adapter.js";
 import { executeGovernedAction } from "./executor.js";
 import { evaluateAction } from "./policy.js";
@@ -178,12 +185,29 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
     const proposal = proposeActionFromDiagnostic(diagnostic, { actionType: "delete_preserved_output", laneId: "research-watch" });
     const decision = evaluateAction(proposal.request, policy, proposal.evidence, executionClock);
     const adapter = new SyntheticAutomationAdapter(await mkdtemp(join(tmpdir(), "governed-red-")));
+    const approvals = id === "17-red-with-approval" ? new MemoryApprovalStore() : null;
+    if (approvals) {
+      const grant = {
+        schemaVersion: "governed-action-approval/v1",
+        id: "approval-red-probe",
+        actionDigest: decision.actionDigest,
+        decisionDigest: decision.decisionDigest,
+        approvedBy: "operator",
+        approvedAt: "2026-07-28T09:11:00Z",
+        expiresAt: "2026-07-28T09:17:00Z",
+        singleUse: true,
+        failureCompensationAuthorized: true,
+        grantDigest: "0".repeat(64),
+      } satisfies ApprovalGrant;
+      grant.grantDigest = digestOmitting(grant, "grantDigest");
+      await approvals.save(approvalGrantSchema.parse(grant));
+    }
     const receipt = await executeGovernedAction(proposal.request, decision, {
       policy,
       evidence: proposal.evidence,
       loadCurrentState: async () => ({ evidence: proposal.evidence, currentTargetHash: proposal.targetHash, diagnosticAsOf: proposal.diagnostic.scenario.asOf }),
       adapter,
-      approvals: id === "17-red-with-approval" ? new MemoryApprovalStore() : null,
+      approvals,
       receipts: new MemoryReceiptStore(),
       clock: executionClock,
     });

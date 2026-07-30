@@ -90,11 +90,17 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
     terminal.close();
     if (confirmation !== "APPROVE") return 2;
     const store = new FileApprovalStore(required(args, "approval-store"));
+    const policy = await loadPolicy(args);
+    const rule = policy.rules.find(
+      (candidate) => candidate.actionType === request.action.type,
+    );
+    const lifetimeSeconds = rule?.maxApprovalLifetimeSeconds ?? 300;
     const grant = await new OperatorApprovalProvider(store).issue(
       request,
       decision,
       required(args, "operator"),
       true,
+      lifetimeSeconds,
     );
     await output(grant, args);
     return 0;
