@@ -1,0 +1,10 @@
+[
+  {"id":"10-evidence-expires","expected":{"code":"stale","effects":0}},
+  {"id":"11-newer-success","expected":{"code":"context_rejection"}},
+  {"id":"22-idempotency","expected":{"code":"same_receipt","adapterCalls":1}},
+  {"id":"23-fail-before-effect","expected":{"code":"failed","effects":0}},
+  {"id":"24-fail-after-effect","expected":{"code":"compensated","restored":true}},
+  {"id":"25-verification-mismatch","expected":{"code":"failed"}},
+  {"id":"26-tampered-receipt","expected":{"code":"invalid"}},
+  {"id":"31-policy-change","expected":{"code":"refused","effects":0}}
+]
