@@ -1,11 +1,25 @@
 import { execFile } from "node:child_process";
-import { readFile } from "node:fs/promises";
-import { extname } from "node:path";
+import { readFile, readdir } from "node:fs/promises";
+import { extname, join } from "node:path";
 import { promisify } from "node:util";
 
 const execute = promisify(execFile);
-const { stdout } = await execute("git", ["ls-files", "-z"]);
-const files = stdout.split("\0").filter(Boolean);
+async function exportedFiles(directory = "") {
+  const ignored = new Set([".git", "node_modules", "dist", "output"]);
+  const entries = await readdir(directory || ".", { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (ignored.has(entry.name)) continue;
+    const path = directory ? join(directory, entry.name) : entry.name;
+    if (entry.isDirectory()) files.push(...await exportedFiles(path));
+    else files.push(path);
+  }
+  return files.sort();
+}
+
+const files = await execute("git", ["ls-files", "-z"])
+  .then(({ stdout }) => stdout.split("\0").filter(Boolean))
+  .catch(() => exportedFiles());
 const forbiddenPaths = [
   /\/Users\//,
   /\/home\/[^/\s]+/,
