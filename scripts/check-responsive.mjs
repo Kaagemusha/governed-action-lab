@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { access, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { extname, join, normalize } from "node:path";
@@ -25,6 +25,7 @@ const mime = {
   ".css": "text/css",
   ".svg": "image/svg+xml",
 };
+await mkdir("output/screenshots", { recursive: true });
 const server = createServer(async (request, response) => {
   const pathname = request.url === "/" ? "/index.html" : new URL(request.url, "http://local").pathname;
   const relative = normalize(pathname).replace(/^[/\\]+/, "");
