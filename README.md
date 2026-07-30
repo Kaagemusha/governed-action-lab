@@ -3,7 +3,7 @@
 A small, inspectable reference implementation showing that an agent's proposed
 action is not authorization.
 
-**Intended console:** <https://kaagemusha.github.io/governed-action-lab/>
+**[Open the live governed-action console](https://kaagemusha.github.io/governed-action-lab/)**
 
 The lab places a deterministic governance boundary between a typed proposal and
 an executor. It makes evidence, policy, authority, execution, verification, and
@@ -72,11 +72,15 @@ approval and rejects `--approve`, `--yes`, and inline approval text.
 
 ## Context Layer Lab relationship
 
-[Context Layer Lab](https://github.com/Kaagemusha/context-layer-lab) answers:
+[Context Layer Lab](https://kaagemusha.github.io/context-layer-lab/) answers:
 **what current evidence supports the conclusion?**
 
 Governed Action Lab answers: **given that evidence, what may execute, under
 whose authority, and with what receipt?**
+
+Together they form a deliberately narrow handoff from evidence reconciliation
+to bounded execution, rather than one agent-controlled system that conflates
+truth, permission, and authority.
 
 The frozen public fixture consumes `context-layer-diagnostic/v1` from producer
 commit `b0179a8e365ab35691864e55d5792db1bdefbcb2`. The consumer validates the
