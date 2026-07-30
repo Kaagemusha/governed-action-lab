@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.approvals/
+.receipts/
+.runtime/
+.env
+.DS_Store
+playwright-report/
+test-results/

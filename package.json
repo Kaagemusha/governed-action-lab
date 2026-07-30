@@ -1,0 +1,30 @@
+{
+  "name": "governed-action-lab",
+  "version": "0.1.0",
+  "description": "A deterministic reference implementation for governing agent actions.",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build --silent && node --test dist/test/*.test.js",
+    "eval": "npm run build --silent && node dist/src/eval-runner.js",
+    "demo:sync": "npm run build --silent && node scripts/build-browser-runtime.mjs && node scripts/sync-demo.mjs",
+    "demo:check": "npm run build --silent && node scripts/build-browser-runtime.mjs --check && node scripts/sync-demo.mjs --check",
+    "public-safety:check": "node scripts/check-public-safety.mjs",
+    "check": "npm run typecheck && npm test && npm run eval && npm run demo:check && npm run public-safety:check"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "esbuild": "0.28.1",
+    "typescript": "5.9.3"
+  }
+}
