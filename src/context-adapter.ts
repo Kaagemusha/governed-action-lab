@@ -1,6 +1,7 @@
 import { sha256 } from "./canonical.js";
 import {
   REQUEST_VERSION,
+  actionRequestSchema,
   diagnosticSnapshotSchema,
   type ActionRequest,
   type CatalogAction,
@@ -156,8 +157,9 @@ export function proposeActionFromDiagnostic(
 
 export function recheckProposal(
   diagnosticInput: unknown,
-  request: ActionRequest,
+  requestInput: ActionRequest,
 ): AdaptedProposal {
+  const request = actionRequestSchema.parse(requestInput);
   const adapted = proposeActionFromDiagnostic(diagnosticInput, {
     actionType: request.action.type,
     laneId: request.action.laneId,
@@ -168,5 +170,20 @@ export function recheckProposal(
       ? { simulateFailure: request.action.simulateFailure }
       : {}),
   });
+  const boundRequest = {
+    action: request.action,
+    evidence: request.evidence,
+    expectedState: request.expectedState,
+  };
+  const expectedRequest = {
+    action: adapted.request.action,
+    evidence: adapted.request.evidence,
+    expectedState: adapted.request.expectedState,
+  };
+  if (sha256(boundRequest) !== sha256(expectedRequest)) {
+    throw new Error(
+      "Action request no longer matches the selected diagnostic evidence.",
+    );
+  }
   return adapted;
 }

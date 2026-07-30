@@ -112,3 +112,27 @@ test("partial failure uses pre-authorized compensation", async () => {
   assert.equal(receipt.compensation.result, "succeeded");
   assert.equal(await readFile(state.adapter.retryPath, "utf8"), "");
 });
+
+test("verification failure uses pre-authorized compensation", async () => {
+  const action = request();
+  const state = await setup(action);
+  await new OperatorApprovalProvider(state.approvals, clock).issue(
+    action,
+    state.decision,
+    "operator",
+    true,
+  );
+  state.adapter.verify = async () => ({
+    passed: false,
+    detail: "Forced verification mismatch.",
+  });
+  const receipt = await executeGovernedAction(action, state.decision, {
+    ...state,
+    policy,
+    evidence,
+    clock,
+  });
+  assert.equal(receipt.result, "compensated");
+  assert.equal(receipt.compensation.result, "succeeded");
+  assert.equal(await readFile(state.adapter.retryPath, "utf8"), "");
+});

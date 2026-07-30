@@ -97,6 +97,36 @@ export async function executeGovernedAction(
   try {
     execution = await dependencies.adapter.execute(request);
     const verification = await dependencies.adapter.verify(request, execution);
+    if (!verification.passed && compensationAuthorized) {
+      try {
+        const compensation = await dependencies.adapter.compensate(request, execution);
+        return finish(compensation.passed ? "compensated" : "failed", "Verification failed after the effect.", {
+          approvalId,
+          effects: execution.effects,
+          verification,
+          precondition: { passed: true, detail: "Evidence, policy, approval, and target state rechecked." },
+          compensation: {
+            supported: true,
+            authorized: true,
+            attempted: true,
+            result: compensation.passed ? "succeeded" : "failed",
+          },
+        });
+      } catch (error) {
+        return finish("failed", "Verification and compensation failed after the effect.", {
+          approvalId,
+          effects: execution.effects,
+          verification,
+          precondition: { passed: true, detail: "Evidence, policy, approval, and target state rechecked." },
+          compensation: {
+            supported: true,
+            authorized: true,
+            attempted: true,
+            result: "failed",
+          },
+        });
+      }
+    }
     return finish(verification.passed ? "succeeded" : "failed", "Mutation preconditions passed.", {
       approvalId,
       effects: execution.effects,

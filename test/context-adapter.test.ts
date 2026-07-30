@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-import { proposeActionFromDiagnostic } from "../src/context-adapter.js";
+import {
+  proposeActionFromDiagnostic,
+  recheckProposal,
+} from "../src/context-adapter.js";
 
 const fixture = JSON.parse(await readFile("examples/context-layer-diagnostic.json", "utf8")) as Record<string, unknown>;
 
@@ -37,5 +40,39 @@ test("tampered assessment, missing evidence, stale evidence, and unsupported ver
   assert.throws(
     () => proposeActionFromDiagnostic({ ...fixture, format: "context-layer-diagnostic/v2" }, { actionType: "retry_failed_lane", laneId: "site-refresh" }),
     /format/,
+  );
+});
+
+test("recheck binds the executable action to the exact diagnostic evidence", () => {
+  const proposal = proposeActionFromDiagnostic(fixture, {
+    actionType: "retry_failed_lane",
+    laneId: "site-refresh",
+  });
+  if (proposal.request.action.type !== "retry_failed_lane") {
+    throw new Error("Expected retry action.");
+  }
+  const retryAction = proposal.request.action;
+  assert.doesNotThrow(() => recheckProposal(fixture, proposal.request));
+  assert.throws(
+    () =>
+      recheckProposal(fixture, {
+        ...proposal.request,
+        evidence: {
+          ...proposal.request.evidence,
+          diagnosticHash: "a".repeat(64),
+        },
+      }),
+    /no longer matches/,
+  );
+  assert.throws(
+    () =>
+      recheckProposal(fixture, {
+        ...proposal.request,
+        action: {
+          ...retryAction,
+          retryPayloadHash: "b".repeat(64),
+        },
+      }),
+    /no longer matches/,
   );
 });

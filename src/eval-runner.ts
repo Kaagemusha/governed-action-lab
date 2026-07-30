@@ -230,7 +230,15 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
   if (id === "25-verification-mismatch") {
     const setup = await approvedSetup();
     setup.dependencies.adapter.verify = async () => ({ passed: false, detail: "forced mismatch" });
-    return { code: (await executeGovernedAction(setup.request, setup.decision, setup.dependencies)).result };
+    const receipt = await executeGovernedAction(
+      setup.request,
+      setup.decision,
+      setup.dependencies,
+    );
+    return {
+      code: receipt.result,
+      restored: (await readFile(setup.adapter.retryPath, "utf8")) === "",
+    };
   }
   if (id === "26-tampered-receipt") {
     const setup = await approvedSetup();
