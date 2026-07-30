@@ -33,6 +33,10 @@ test("canonical JSON sorts keys recursively and hashes deterministically", () =>
   assert.notEqual(sha256(request), sha256({ ...request, intent: "Changed" }));
 });
 
+test("portable SHA-256 matches the standard vector", () => {
+  assert.equal(sha256("abc"), "6cc43f858fbb763301637b5af970e2a46b46f461f27e5a0f41e009c59b827b25");
+});
+
 test("canonical JSON rejects non-JSON values", () => {
   assert.throws(() => canonicalJson({ bad: undefined }), /Undefined value/);
   assert.throws(() => canonicalJson({ bad: Number.NaN }), /Non-finite number/);

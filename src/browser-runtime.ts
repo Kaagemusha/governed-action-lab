@@ -1,6 +1,7 @@
 import type { PolicyManifest } from "./contracts.js";
 import { proposeActionFromDiagnostic, recheckProposal } from "./context-adapter.js";
 import { evaluateAction, type Clock } from "./policy.js";
+export { sha256 } from "./canonical.js";
 
 export function buildPublicDemo(diagnostic: unknown, policy: PolicyManifest, clock: Clock) {
   return [

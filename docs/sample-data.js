@@ -1,0 +1,290 @@
+export const SAMPLE_DIAGNOSTIC = {
+  "format": "context-layer-diagnostic/v1",
+  "scenario": {
+    "question": "Are all scheduled automations healthy?",
+    "asOf": "2026-07-28T09:10:00Z",
+    "lanes": [
+      {
+        "id": "morning-brief",
+        "label": "Morning Brief",
+        "dueAt": "2026-07-28T07:55:00Z"
+      },
+      {
+        "id": "site-refresh",
+        "label": "Site Refresh",
+        "dueAt": "2026-07-28T08:15:00Z"
+      },
+      {
+        "id": "research-watch",
+        "label": "Research Watch",
+        "dueAt": "2026-07-28T08:30:00Z"
+      },
+      {
+        "id": "ai-radar",
+        "label": "AI Radar",
+        "dueAt": "2026-07-28T17:30:00Z"
+      }
+    ],
+    "summary": {
+      "recordId": "fleet-health-rollup",
+      "observedAt": "2026-07-28T07:30:00Z",
+      "verdict": "healthy"
+    },
+    "receipts": [
+      {
+        "recordId": "morning-brief-receipt",
+        "laneId": "morning-brief",
+        "observedAt": "2026-07-28T08:02:00Z",
+        "outcome": "success"
+      },
+      {
+        "recordId": "site-refresh-receipt",
+        "laneId": "site-refresh",
+        "observedAt": "2026-07-28T08:40:00Z",
+        "outcome": "failed"
+      },
+      {
+        "recordId": "research-watch-receipt",
+        "laneId": "research-watch",
+        "observedAt": "2026-07-28T09:05:00Z",
+        "outcome": "preserved_local"
+      }
+    ]
+  },
+  "assessment": {
+    "question": "Are all scheduled automations healthy?",
+    "asOf": "2026-07-28T09:10:00Z",
+    "naiveVerdict": "healthy",
+    "governedVerdict": "attention",
+    "summaryStale": true,
+    "decisionPrevented": true,
+    "newerEvidenceRecordIds": [
+      "morning-brief-receipt",
+      "site-refresh-receipt",
+      "research-watch-receipt"
+    ],
+    "laneAssessments": [
+      {
+        "id": "morning-brief",
+        "label": "Morning Brief",
+        "state": "healthy",
+        "outcome": "success",
+        "evidenceRecordId": "morning-brief-receipt"
+      },
+      {
+        "id": "site-refresh",
+        "label": "Site Refresh",
+        "state": "attention",
+        "outcome": "failed",
+        "evidenceRecordId": "site-refresh-receipt"
+      },
+      {
+        "id": "research-watch",
+        "label": "Research Watch",
+        "state": "attention",
+        "outcome": "preserved_local",
+        "evidenceRecordId": "research-watch-receipt"
+      },
+      {
+        "id": "ai-radar",
+        "label": "AI Radar",
+        "state": "not_due",
+        "outcome": null,
+        "evidenceRecordId": null
+      }
+    ],
+    "evidenceQuality": {
+      "fleet-health-rollup": {
+        "state": "degraded",
+        "issues": [
+          {
+            "code": "stale_record",
+            "severity": "warning",
+            "message": "The record expired at 2026-07-28T07:55:00Z.",
+            "path": "validUntil"
+          }
+        ]
+      },
+      "morning-brief-receipt": {
+        "state": "valid",
+        "issues": []
+      },
+      "site-refresh-receipt": {
+        "state": "valid",
+        "issues": []
+      },
+      "research-watch-receipt": {
+        "state": "valid",
+        "issues": []
+      }
+    }
+  },
+  "records": [
+    {
+      "id": "fleet-health-rollup",
+      "title": "Fleet Health Rollup",
+      "summary": "A morning dashboard snapshot reports every scheduled lane healthy.",
+      "content": "The dashboard was accurate when generated. Its freshness window ends when the first morning lane becomes due.",
+      "tags": [
+        "automation-health",
+        "summary",
+        "dashboard"
+      ],
+      "owner": "Reliability Operations",
+      "updatedAt": "2026-07-28T07:30:00Z",
+      "validUntil": "2026-07-28T07:55:00Z",
+      "sources": [
+        {
+          "id": "dashboard-snapshot-0730",
+          "label": "Dashboard snapshot at 07:30",
+          "url": "https://example.invalid/operations/dashboard-0730",
+          "observedAt": "2026-07-28T07:30:00Z"
+        }
+      ],
+      "claims": [
+        {
+          "text": "All scheduled automation lanes are healthy.",
+          "sourceIds": [
+            "dashboard-snapshot-0730"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "morning-brief-receipt",
+      "title": "Morning Brief Run Receipt",
+      "summary": "The scheduled morning brief completed and delivered successfully.",
+      "content": "The terminal receipt records successful generation and delivery after the lane's scheduled window opened.",
+      "tags": [
+        "automation-health",
+        "run-receipt",
+        "morning-brief"
+      ],
+      "owner": "Messaging Operations",
+      "updatedAt": "2026-07-28T08:02:00Z",
+      "validUntil": "2026-07-29T08:02:00Z",
+      "sources": [
+        {
+          "id": "morning-run-0802",
+          "label": "Morning Brief terminal receipt",
+          "url": "https://example.invalid/operations/morning-run-0802",
+          "observedAt": "2026-07-28T08:02:00Z"
+        }
+      ],
+      "claims": [
+        {
+          "text": "The Morning Brief run completed successfully.",
+          "sourceIds": [
+            "morning-run-0802"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "research-watch-receipt",
+      "title": "Research Watch Run Receipt",
+      "summary": "The research run completed, but its output remains preserved locally rather than integrated.",
+      "content": "Work exists, but the terminal state is not equivalent to successful publication. The lane needs attention without discarding its output.",
+      "tags": [
+        "automation-health",
+        "run-receipt",
+        "research-watch"
+      ],
+      "owner": "Research Operations",
+      "updatedAt": "2026-07-28T09:05:00Z",
+      "validUntil": "2026-07-29T09:05:00Z",
+      "sources": [
+        {
+          "id": "research-run-0905",
+          "label": "Research Watch terminal receipt",
+          "url": "https://example.invalid/operations/research-run-0905",
+          "observedAt": "2026-07-28T09:05:00Z"
+        }
+      ],
+      "claims": [
+        {
+          "text": "The Research Watch output is preserved locally and is not integrated.",
+          "sourceIds": [
+            "research-run-0905"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "site-refresh-receipt",
+      "title": "Site Refresh Run Receipt",
+      "summary": "The scheduled refresh stopped before deployment because its source checkout was dirty.",
+      "content": "The prior public version remains unchanged. The failed run is newer and more specific than the earlier fleet summary.",
+      "tags": [
+        "automation-health",
+        "run-receipt",
+        "site-refresh"
+      ],
+      "owner": "Web Operations",
+      "updatedAt": "2026-07-28T08:40:00Z",
+      "validUntil": "2026-07-29T08:40:00Z",
+      "sources": [
+        {
+          "id": "site-run-0840",
+          "label": "Site Refresh terminal receipt",
+          "url": "https://example.invalid/operations/site-run-0840",
+          "observedAt": "2026-07-28T08:40:00Z"
+        }
+      ],
+      "claims": [
+        {
+          "text": "The Site Refresh run failed before deployment.",
+          "sourceIds": [
+            "site-run-0840"
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+export const PUBLIC_POLICY = {
+  "schemaVersion": "governed-action-policy/v1",
+  "id": "governed-action-lab-public-policy",
+  "version": "1.0.0",
+  "diagnosticFormat": "context-layer-diagnostic/v1",
+  "maxEvidenceAgeSeconds": 86400,
+  "rules": [
+    {
+      "id": "rule.inspect.read-only",
+      "actionType": "inspect_run_receipt",
+      "adapterId": "synthetic-automation",
+      "classification": "green",
+      "allowedEnvironment": "read_only",
+      "approvalRequired": false,
+      "maxApprovalLifetimeSeconds": null,
+      "requiredEvidenceOutcome": null,
+      "reversible": false,
+      "verificationRequired": true
+    },
+    {
+      "id": "rule.retry.reversible-sandbox",
+      "actionType": "retry_failed_lane",
+      "adapterId": "synthetic-automation",
+      "classification": "yellow",
+      "allowedEnvironment": "synthetic_sandbox",
+      "approvalRequired": true,
+      "maxApprovalLifetimeSeconds": 300,
+      "requiredEvidenceOutcome": "failed",
+      "reversible": true,
+      "verificationRequired": true
+    },
+    {
+      "id": "rule.delete.refuse",
+      "actionType": "delete_preserved_output",
+      "adapterId": null,
+      "classification": "red",
+      "allowedEnvironment": null,
+      "approvalRequired": false,
+      "maxApprovalLifetimeSeconds": null,
+      "requiredEvidenceOutcome": "preserved_local",
+      "reversible": false,
+      "verificationRequired": false
+    }
+  ]
+};

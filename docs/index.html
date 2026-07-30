@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="An inspectable reference implementation for governing agent actions." />
+    <title>Governed Action Lab</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <a class="brand" href="#console"><span class="brand-mark" aria-hidden="true"></span>Governed Action</a>
+      <nav aria-label="Page navigation">
+        <span class="privacy-state">Local processing only</span>
+        <a href="#proof">Engineering proof</a>
+      </nav>
+    </header>
+
+    <main>
+      <section id="console" class="console" aria-labelledby="console-title">
+        <div class="console-head">
+          <div>
+            <p class="kicker">Operator console</p>
+            <h1 id="console-title">From evidence to accountable action.</h1>
+            <p class="intro">A proposal is evaluated, authorized, executed, verified, and recorded without giving the agent approval authority.</p>
+          </div>
+          <div class="console-actions">
+            <input id="packet-file" type="file" accept=".json,application/json" hidden />
+            <button id="open-packet" class="button secondary" type="button">Open packet</button>
+            <button id="reset-sample" class="button quiet" type="button">Reset sample</button>
+          </div>
+        </div>
+
+        <div class="source-bar">
+          <div><span id="source-mode" class="source-mode">Synthetic sample</span><span id="source-message" role="status">No content leaves this browser.</span></div>
+          <span>Synthetic sandbox · not production authorization</span>
+        </div>
+
+        <ol class="decision-path" aria-label="Governed action sequence">
+          <li class="active">Evidence</li><li>Proposed action</li><li>Policy verdict</li><li>Approval</li><li>Receipt</li><li>Rollback</li>
+        </ol>
+
+        <div class="path-layout">
+          <aside class="action-list" aria-label="Demonstration actions">
+            <p class="kicker">Three consequence paths</p>
+            <button class="action-choice active" data-action="inspect_run_receipt" type="button">
+              <span class="class green">Green</span><strong>Inspect failed receipt</strong><small>Read-only inspection</small>
+            </button>
+            <button class="action-choice" data-action="retry_failed_lane" type="button">
+              <span class="class yellow">Yellow</span><strong>Retry failed lane</strong><small>Exact approval required</small>
+            </button>
+            <button class="action-choice" data-action="delete_preserved_output" type="button">
+              <span class="class red">Red</span><strong>Delete preserved output</strong><small>Structurally refused</small>
+            </button>
+          </aside>
+
+          <section class="inspection" aria-live="polite">
+            <div class="inspection-head">
+              <div><p class="kicker">Current proposal</p><h2 id="action-title"></h2></div>
+              <span id="verdict-badge" class="verdict-badge"></span>
+            </div>
+
+            <div class="evidence-strip">
+              <div><span>Evidence</span><strong id="evidence-title"></strong><small id="evidence-state"></small></div>
+              <div><span>Target</span><strong id="target-id"></strong><small id="target-hash"></small></div>
+            </div>
+
+            <div class="policy-block">
+              <p class="kicker">Deterministic policy verdict</p>
+              <h3 id="verdict-title"></h3>
+              <p id="verdict-reason"></p>
+              <dl>
+                <div><dt>Rule</dt><dd id="policy-rule"></dd></div>
+                <div><dt>Adapter</dt><dd id="adapter-id"></dd></div>
+                <div><dt>Environment</dt><dd id="environment"></dd></div>
+              </dl>
+            </div>
+
+            <div id="approval-boundary" class="approval-boundary" hidden>
+              <strong>Agent cannot approve this action.</strong>
+              <span>Approval is exact, expires after five minutes, is single-use, and includes failure compensation.</span>
+            </div>
+
+            <div id="receipt-panel" class="receipt-panel" hidden>
+              <div><p class="kicker">Execution receipt</p><strong id="receipt-result"></strong></div>
+              <dl>
+                <div><dt>Effect</dt><dd id="effect-detail"></dd></div>
+                <div><dt>Verification</dt><dd id="verification-detail"></dd></div>
+                <div><dt>Rollback</dt><dd id="rollback-detail"></dd></div>
+              </dl>
+            </div>
+
+            <div class="primary-action">
+              <button id="run-action" class="button primary" type="button"></button>
+              <button id="export-receipt" class="button secondary" type="button" disabled>Export receipt JSON</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section id="proof" class="proof" aria-labelledby="proof-title">
+        <div><p class="kicker">Engineering proof</p><h2 id="proof-title">Tool access is not authority.</h2></div>
+        <div class="proof-grid">
+          <article><strong>Closed catalog</strong><span>No shell strings or model classification</span></article>
+          <article><strong>Exact approval</strong><span>Request + decision bound, expiring, single-use</span></article>
+          <article><strong>31 adversarial cases</strong><span>Structured expected outputs</span></article>
+          <article><strong>Append-only receipts</strong><span>Bounded effects and before/after hashes</span></article>
+        </div>
+        <div class="boundary-copy">
+          <p><strong>What this proves:</strong> deterministic policy can veto or gate typed synthetic actions and leave inspectable evidence.</p>
+          <p><strong>What it does not:</strong> provide production authorization, tamper-proof audit logs, machine isolation, or truth guarantees.</p>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="approval-dialog" aria-labelledby="approval-title">
+      <form method="dialog">
+        <p class="kicker">Human approval boundary</p>
+        <h2 id="approval-title">Approve this exact synthetic retry?</h2>
+        <dl>
+          <div><dt>Target</dt><dd id="approval-target"></dd></div>
+          <div><dt>Effect</dt><dd>Create one synthetic retry record</dd></div>
+          <div><dt>Evidence</dt><dd id="approval-evidence"></dd></div>
+          <div><dt>Expiry</dt><dd id="approval-expiry"></dd></div>
+          <div><dt>Rollback contract</dt><dd>Restore the exact pre-action sandbox snapshot if execution partially fails</dd></div>
+        </dl>
+        <p class="operator-note">Agent cannot approve this action. This control represents a separate operator-facing provider.</p>
+        <div class="dialog-actions">
+          <button class="button quiet" value="cancel">Cancel</button>
+          <button id="confirm-approval" class="button primary" value="approve">Approve exact retry</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
