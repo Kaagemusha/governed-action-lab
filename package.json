@@ -8,6 +8,9 @@
   "engines": {
     "node": ">=22"
   },
+  "bin": {
+    "governed-action-lab": "./dist/src/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit",
@@ -16,7 +19,8 @@
     "demo:sync": "npm run build --silent && node scripts/build-browser-runtime.mjs && node scripts/sync-demo.mjs",
     "demo:check": "npm run build --silent && node scripts/build-browser-runtime.mjs --check && node scripts/sync-demo.mjs --check",
     "public-safety:check": "node scripts/check-public-safety.mjs",
-    "check": "npm run typecheck && npm test && npm run eval && npm run demo:check && npm run public-safety:check"
+    "check": "npm run typecheck && npm test && npm run eval && npm run demo:check && npm run public-safety:check",
+    "action": "npm run build --silent && node dist/src/cli.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",

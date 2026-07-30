@@ -1,0 +1,7 @@
+{
+  "producer": "Context Layer Lab",
+  "producerCommit": "b0179a8e365ab35691864e55d5792db1bdefbcb2",
+  "format": "context-layer-diagnostic/v1",
+  "fixture": "context-layer-diagnostic.json",
+  "synthetic": true
+}
