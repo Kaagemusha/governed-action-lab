@@ -243,6 +243,17 @@ npm run check
 `npm run check` is network-independent after installation. Runtime files and
 the public sample are generated deterministically; drift fails the gate.
 
+Before publishing, configure a private newline-delimited pattern file and
+install the fail-closed pre-push hook:
+
+```bash
+git config publicSafety.patternsFile /path/to/private-patterns
+npm run public-safety:install
+```
+
+The hook scans the current tree and every outgoing commit, so adding and then
+deleting private data in one push is still blocked. CI repeats the generic scan.
+
 ## Rollback
 
 Each implementation phase is a separate commit. Revert the smallest phase
