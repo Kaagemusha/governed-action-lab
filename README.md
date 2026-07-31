@@ -53,22 +53,43 @@ Serve `docs/` with any static file server to use the local-first console.
 Artifact-oriented commands:
 
 ```bash
+npm run fixture:fresh -- --output /tmp/governed-diagnostic.json
+
 npm run action -- propose \
-  --diagnostic examples/context-layer-diagnostic.json \
+  --diagnostic /tmp/governed-diagnostic.json \
   --action retry_failed_lane \
   --lane site-refresh \
   --output /tmp/action-request.json
 
 npm run action -- evaluate \
-  --diagnostic examples/context-layer-diagnostic.json \
+  --diagnostic /tmp/governed-diagnostic.json \
   --request /tmp/action-request.json \
   --output /tmp/action-decision.json
+
+npm run action -- approve \
+  --request /tmp/action-request.json \
+  --decision /tmp/action-decision.json \
+  --approval-store /tmp/governed-action-demo/approvals.json \
+  --operator reviewer \
+  --output /tmp/action-approval.json
+
+npm run action -- execute \
+  --diagnostic /tmp/governed-diagnostic.json \
+  --request /tmp/action-request.json \
+  --decision /tmp/action-decision.json \
+  --approval-store /tmp/governed-action-demo/approvals.json \
+  --receipt-store /tmp/governed-action-demo/receipts.json \
+  --sandbox /tmp/governed-action-demo/sandbox \
+  --output /tmp/action-receipt.json
 ```
 
 `approve` is an interactive operator command. It displays the exact target,
 effect, evidence, five-minute expiry, and rollback contract before accepting
 the literal confirmation `APPROVE`. `execute` discovers a separately stored
 approval and rejects `--approve`, `--yes`, and inline approval text.
+`fixture:fresh` shifts only the bundled synthetic example to the current wall
+clock so its one-day evidence window remains meaningful. Production execution
+always uses the system clock and has no `--at` override.
 
 ## Context Layer Lab relationship
 
