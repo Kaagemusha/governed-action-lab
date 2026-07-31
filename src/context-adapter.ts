@@ -121,7 +121,7 @@ export function proposeActionFromDiagnostic(
     proposer: { kind: "agent", id: input.proposerId ?? "public-demo-agent" },
     intent:
       input.actionType === "inspect_run_receipt"
-        ? "Inspect the failed run receipt."
+        ? "Inspect the latest run receipt."
         : input.actionType === "retry_failed_lane"
           ? "Retry the failed lane in the synthetic sandbox."
           : "Delete the preserved local output.",

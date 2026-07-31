@@ -14,6 +14,7 @@ test("diagnostic creates exact green, yellow, and red requests", () => {
   const retry = proposeActionFromDiagnostic(fixture, { actionType: "retry_failed_lane", laneId: "site-refresh" });
   const deletion = proposeActionFromDiagnostic(fixture, { actionType: "delete_preserved_output", laneId: "research-watch" });
   assert.equal(inspect.request.target.environment, "read_only");
+  assert.equal(inspect.request.intent, "Inspect the latest run receipt.");
   assert.equal(retry.evidence.outcome, "failed");
   assert.equal(deletion.evidence.outcome, "preserved_local");
 });
