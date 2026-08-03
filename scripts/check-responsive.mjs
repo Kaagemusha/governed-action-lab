@@ -58,7 +58,7 @@ const chrome = spawn(chromePath, [
 ], { stdio: "ignore" });
 
 let pages;
-for (let attempt = 0; attempt < 50; attempt += 1) {
+for (let attempt = 0; attempt < 150; attempt += 1) {
   pages = await fetch(`http://127.0.0.1:${debugPort}/json`).then((response) => response.json()).catch(() => null);
   if (pages) break;
   await new Promise((resolve) => setTimeout(resolve, 100));
