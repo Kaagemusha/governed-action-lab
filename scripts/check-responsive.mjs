@@ -51,6 +51,7 @@ const chrome = spawn(chromePath, [
   "--headless=new",
   "--no-first-run",
   "--disable-extensions",
+  ...(process.env.CI ? ["--no-sandbox"] : []),
   `--user-data-dir=${profile}`,
   `--remote-debugging-port=${debugPort}`,
   "about:blank",
