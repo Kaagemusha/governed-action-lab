@@ -6,14 +6,17 @@ import { createInterface } from "node:readline/promises";
 import { FileApprovalStore, OperatorApprovalProvider } from "./approval.js";
 import { SyntheticAutomationAdapter } from "./adapters/synthetic-automation.js";
 import {
+  catalogActionTypeSchema,
   actionRequestSchema,
   executionReceiptSchema,
   policyDecisionSchema,
+  type CatalogAction,
   type PolicyManifest,
 } from "./contracts.js";
 import { proposeActionFromDiagnostic, recheckProposal } from "./context-adapter.js";
 import { executeGovernedAction } from "./executor.js";
 import { evaluateAction, systemClock } from "./policy.js";
+import { prepareActionReview, renderActionReviewBrief } from "./operator-review.js";
 import { verifyReceipt } from "./receipts.js";
 import { FileReceiptStore } from "./store.js";
 
@@ -48,18 +51,41 @@ async function output(value: unknown, args: Args): Promise<void> {
 async function loadPolicy(args: Args): Promise<PolicyManifest> {
   return (await json(typeof args.policy === "string" ? args.policy : "data/policy.json")) as PolicyManifest;
 }
+function actionType(args: Args): CatalogAction["type"] {
+  return catalogActionTypeSchema.parse(required(args, "action"));
+}
 
 export async function runCli(argv = process.argv.slice(2)): Promise<number> {
   const command = argv[0];
   const args = parseArgs(argv.slice(1));
   if (command === "propose") {
-    const action = required(args, "action") as "inspect_run_receipt" | "retry_failed_lane" | "delete_preserved_output";
     const proposal = proposeActionFromDiagnostic(await json(required(args, "diagnostic")), {
-      actionType: action,
+      actionType: actionType(args),
       laneId: required(args, "lane"),
       ...(typeof args.at === "string" ? { proposedAt: args.at } : {}),
     });
     await output(proposal.request, args);
+    return 0;
+  }
+  if (command === "prepare") {
+    const adapter = new SyntheticAutomationAdapter(
+      resolve(typeof args.sandbox === "string" ? args.sandbox : ".runtime/preview"),
+    );
+    const review = await prepareActionReview(
+      await json(required(args, "diagnostic")),
+      {
+        actionType: actionType(args),
+        laneId: required(args, "lane"),
+        proposerId: "operator-review-cli",
+      },
+      await loadPolicy(args),
+      adapter,
+      typeof args.at === "string" ? { now: () => new Date(args.at as string) } : undefined,
+    );
+    if (typeof args["brief-output"] === "string") {
+      await writeFile(args["brief-output"], renderActionReviewBrief(review));
+    }
+    await output(review, args);
     return 0;
   }
   if (command === "evaluate") {
@@ -162,7 +188,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
     await output(results, args);
     return 0;
   }
-  throw new Error("Command must be propose, evaluate, simulate, approve, execute, verify-receipt, rollback-request, or demo.");
+  throw new Error("Command must be prepare, propose, evaluate, simulate, approve, execute, verify-receipt, rollback-request, or demo.");
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

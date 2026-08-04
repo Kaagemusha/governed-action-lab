@@ -55,6 +55,23 @@ Artifact-oriented commands:
 ```bash
 npm run fixture:fresh -- --output /tmp/governed-diagnostic.json
 
+npm run action -- prepare \
+  --diagnostic /tmp/governed-diagnostic.json \
+  --action retry_failed_lane \
+  --lane site-refresh \
+  --output /tmp/action-review.json \
+  --brief-output /tmp/action-review.md
+```
+
+`prepare` is the operator-facing read path. It validates the diagnostic,
+creates the typed request, evaluates policy, and simulates the projected effect
+as one strict `governed-action-review/v1` packet. It never approves or executes.
+The optional six-line brief reports the action, evidence boundary, required
+authority, and next step without a model call.
+
+The lower-level lifecycle remains available for inspecting each boundary:
+
+```bash
 npm run action -- propose \
   --diagnostic /tmp/governed-diagnostic.json \
   --action retry_failed_lane \
@@ -150,6 +167,7 @@ than reimplemented.
 
 Strict Zod schemas reject unknown keys at persisted and transport boundaries:
 
+- `governed-action-review/v1`
 - `governed-action-request/v1`
 - `governed-action-decision/v1`
 - `governed-action-approval/v1`
@@ -180,7 +198,7 @@ identifier, not an approval payload or command string.
 
 ## Evaluations
 
-`npm run eval` executes 31 deterministic adversarial cases and compares actual
+`npm run eval` executes 34 deterministic adversarial cases and compares actual
 structured output with explicit expected output. Coverage includes:
 
 - unknown action, adapter, environment, diagnostic, and command-shaped input;
@@ -191,7 +209,8 @@ structured output with explicit expected output. Coverage includes:
 - idempotency, failures before and after effect, compensation, verification
   mismatch, and tampered receipts;
 - absent approval providers, MCP capability limits, forged browser decisions,
-  generated-demo drift, and policy change after approval.
+  generated-demo drift, policy change after approval, review-only preparation,
+  and review-packet tampering.
 
 `npm run qa:responsive` launches an isolated local Chrome instance and asserts
 that the document and every rendered element remain within 320, 375, and 390px

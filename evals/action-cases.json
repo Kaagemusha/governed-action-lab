@@ -21,5 +21,8 @@
   {"id":"27-approval-provider-absent","expected":{"code":"refused","effects":0}},
   {"id":"28-mcp-approval-attempt","expected":{"code":"capability_absent"}},
   {"id":"29-forged-browser-decision","expected":{"code":"forgery_rejected"}},
-  {"id":"30-demo-drift","expected":{"code":"in_sync"}}
+  {"id":"30-demo-drift","expected":{"code":"in_sync"}},
+  {"id":"32-review-ready","expected":{"code":"READY","adapterCalls":0}},
+  {"id":"33-review-approval","expected":{"code":"APPROVAL_REQUIRED","adapterCalls":0}},
+  {"id":"34-review-tamper","expected":{"code":"tamper_rejected"}}
 ]

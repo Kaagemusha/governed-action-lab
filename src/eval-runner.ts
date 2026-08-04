@@ -22,6 +22,7 @@ import {
 import { proposeActionFromDiagnostic } from "./context-adapter.js";
 import { executeGovernedAction } from "./executor.js";
 import { evaluateAction } from "./policy.js";
+import { prepareActionReview, verifyActionReview } from "./operator-review.js";
 import { verifyReceipt } from "./receipts.js";
 import { MemoryReceiptStore } from "./store.js";
 import { AGENT_TOOL_NAMES } from "./tool-handlers.js";
@@ -293,6 +294,38 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
     const changedPolicy = { ...policy, version: "1.0.1" };
     const receipt = await executeGovernedAction(setup.request, setup.decision, { ...setup.dependencies, policy: changedPolicy });
     return { code: receipt.result, effects: receipt.effects.length };
+  }
+  if (id === "32-review-ready" || id === "33-review-approval") {
+    const adapter = new SyntheticAutomationAdapter(
+      await mkdtemp(join(tmpdir(), "governed-review-")),
+    );
+    const review = await prepareActionReview(
+      diagnostic,
+      {
+        actionType:
+          id === "32-review-ready" ? "inspect_run_receipt" : "retry_failed_lane",
+        laneId: "site-refresh",
+      },
+      policy,
+      adapter,
+      decisionClock,
+    );
+    return { code: review.status, adapterCalls: adapter.executeCalls };
+  }
+  if (id === "34-review-tamper") {
+    const review = await prepareActionReview(
+      diagnostic,
+      { actionType: "retry_failed_lane", laneId: "site-refresh" },
+      policy,
+      new SyntheticAutomationAdapter(await mkdtemp(join(tmpdir(), "governed-review-"))),
+      decisionClock,
+    );
+    try {
+      verifyActionReview({ ...review, reviewDigest: "a".repeat(64) });
+      return { code: "tamper_accepted" };
+    } catch {
+      return { code: "tamper_rejected" };
+    }
   }
   throw new Error(`No evaluator for ${id}.`);
 }

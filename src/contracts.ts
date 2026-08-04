@@ -6,6 +6,7 @@ export const APPROVAL_VERSION = "governed-action-approval/v1";
 export const RECEIPT_VERSION = "governed-action-receipt/v1";
 export const POLICY_VERSION = "governed-action-policy/v1";
 export const DIAGNOSTIC_VERSION = "context-layer-diagnostic/v1";
+export const REVIEW_VERSION = "governed-action-review/v1";
 
 const id = z.string().min(1);
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
@@ -38,6 +39,11 @@ export const catalogActionSchema = z.discriminatedUnion("type", [
   inspectActionSchema,
   retryActionSchema,
   deleteActionSchema,
+]);
+export const catalogActionTypeSchema = z.enum([
+  "inspect_run_receipt",
+  "retry_failed_lane",
+  "delete_preserved_output",
 ]);
 
 export const actionRequestSchema = z
@@ -110,6 +116,32 @@ export const policyDecisionSchema = z
     requirements: z.array(id),
     decisionAt: instant,
     decisionDigest: digest,
+  })
+  .strict();
+
+export const actionPlanSchema = z
+  .object({
+    effect: id,
+    reversible: z.boolean(),
+  })
+  .strict();
+
+export const actionReviewSchema = z
+  .object({
+    schemaVersion: z.literal(REVIEW_VERSION),
+    id,
+    diagnostic: z
+      .object({
+        format: z.literal(DIAGNOSTIC_VERSION),
+        digest,
+        asOf: instant,
+      })
+      .strict(),
+    request: actionRequestSchema,
+    decision: policyDecisionSchema,
+    plan: actionPlanSchema,
+    status: z.enum(["READY", "APPROVAL_REQUIRED", "REFUSED"]),
+    reviewDigest: digest,
   })
   .strict();
 
@@ -291,3 +323,4 @@ export type ApprovalGrant = z.infer<typeof approvalGrantSchema>;
 export type ExecutionReceipt = z.infer<typeof executionReceiptSchema>;
 export type PolicyManifest = z.infer<typeof policyManifestSchema>;
 export type DiagnosticSnapshot = z.infer<typeof diagnosticSnapshotSchema>;
+export type ActionReview = z.infer<typeof actionReviewSchema>;
