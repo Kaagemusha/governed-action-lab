@@ -122,7 +122,7 @@
         <div class="boundary-copy">
           <p><strong>What this proves:</strong> deterministic policy can veto or gate typed synthetic actions and leave inspectable evidence.</p>
           <p><strong>What it does not:</strong> provide production authorization, tamper-proof audit logs, machine isolation, or truth guarantees.</p>
-          <p><strong>Operational proof:</strong> a private scheduled shadow path passed 10/10 supervised cases, including stale, contradictory, unavailable-runtime, and mixed-state evidence, without creating an approval or execution artifact.</p>
+          <p><strong>Operational proof:</strong> a private scheduled shadow path passed 10/10 supervised cases. One green follow-on now reads a hash-bound local evidence file through a confined read-only adapter and writes one immutable receipt. The live receipt verified with no approval, matching source and before/after hashes, and an idempotent replay changed no files. Yellow execution remains disabled.</p>
           <p><strong>Evidence before authority:</strong> inspect the upstream reasoning in the <a href="https://kaagemusha.github.io/context-layer-lab/">Context Layer Lab</a>.</p>
         </div>
       </section>

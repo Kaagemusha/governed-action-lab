@@ -71,16 +71,21 @@ authority, and next step without a model call.
 
 ### Operational proof
 
-The review path now runs after a scheduled private context diagnostic. It
-produces review packets and a compact brief in shadow mode, while leaving
-approval and execution unavailable. A supervised 10-case pilot covered healthy,
-failed, preserved-local, missing, stale, contradictory, mixed, unavailable-
-runtime, transition, and deterministic-replay states. All cases passed and no
-approval, execution, receipt-store, or retry artifact was created.
+The review path runs after a scheduled private context diagnostic. A supervised
+10-case shadow pilot covered healthy, failed, preserved-local, missing, stale,
+contradictory, mixed, unavailable-runtime, transition, and deterministic-replay
+states. All cases passed without creating an approval or mutation artifact.
+
+One bounded green action now runs privately after that review: it inspects one
+hash-bound local evidence file through a root-confined, non-symlink, read-only
+adapter and writes at most one immutable receipt per day. The live receipt
+verified its schema and digest, carried no approval, matched the diagnostic's
+source hash, and recorded identical before/after hashes. Immediate replay reused
+the receipt and changed no files. Yellow execution remains disabled.
 
 The public console uses synthetic data to show the same status and authority
-boundary. No private diagnostic, lane identifier, path, or operating record is
-published in this repository.
+boundary. No private diagnostic, receipt, lane identifier, path, hostname, or
+operating record is published in this repository.
 
 The lower-level lifecycle remains available for inspecting each boundary:
 
