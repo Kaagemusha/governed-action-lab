@@ -83,6 +83,14 @@ verified its schema and digest, carried no approval, matched the diagnostic's
 source hash, and recorded identical before/after hashes. Immediate replay reused
 the receipt and changed no files. Yellow execution remains disabled.
 
+A separate supervised yellow proof ran only in the bundled synthetic sandbox.
+The operator had to type the literal approval in an interactive terminal after
+seeing the exact target, effect, evidence, expiry, and rollback contract. The
+resulting five-minute, single-use grant bound the request and decision; execution
+rechecked current state, wrote one synthetic retry record, and produced a valid
+receipt. Replay returned that same receipt without a second effect. Compensation
+was pre-authorized but not needed. No external system was connected or changed.
+
 The public console uses synthetic data to show the same status and authority
 boundary. No private diagnostic, receipt, lane identifier, path, hostname, or
 operating record is published in this repository.
