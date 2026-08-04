@@ -127,7 +127,7 @@ export function proposeActionFromDiagnostic(
           : "Delete the preserved local output.",
     action,
     target: {
-      adapterId: "synthetic-automation",
+      adapterId: "governed-automation",
       resourceId: input.laneId,
       environment:
         input.actionType === "inspect_run_receipt" ? "read_only" : "synthetic_sandbox",

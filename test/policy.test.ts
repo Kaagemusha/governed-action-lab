@@ -15,7 +15,7 @@ const base: ActionRequest = {
   proposer: { kind: "agent", id: "demo" },
   intent: "Inspect",
   action: { type: "inspect_run_receipt", laneId: "site-refresh", recordId: "receipt" },
-  target: { adapterId: "synthetic-automation", resourceId: "site-refresh", environment: "read_only" },
+  target: { adapterId: "governed-automation", resourceId: "site-refresh", environment: "read_only" },
   evidence: {
     diagnosticFormat: "context-layer-diagnostic/v1",
     diagnosticHash: hash,
@@ -62,7 +62,7 @@ test("red deletion is structurally refused", () => {
   const request: ActionRequest = {
     ...base,
     action: { type: "delete_preserved_output", laneId: "research-watch", recordId: "receipt" },
-    target: { adapterId: "synthetic-automation", resourceId: "research-watch", environment: "synthetic_sandbox" },
+    target: { adapterId: "governed-automation", resourceId: "research-watch", environment: "synthetic_sandbox" },
   };
   const decision = evaluateAction(request, policy, { ...eligible, outcome: "preserved_local" }, clock);
   assert.equal(decision.classification, "red");

@@ -17,7 +17,7 @@ const request: ActionRequest = {
   proposer: { kind: "agent", id: "demo-agent" },
   intent: "Inspect the failed receipt",
   action: { type: "inspect_run_receipt", laneId: "site-refresh", recordId: "site-refresh-receipt" },
-  target: { adapterId: "synthetic-automation", resourceId: "site-refresh", environment: "read_only" },
+  target: { adapterId: "governed-automation", resourceId: "site-refresh", environment: "read_only" },
   evidence: {
     diagnosticFormat: "context-layer-diagnostic/v1",
     diagnosticHash: digest,
@@ -71,7 +71,7 @@ test("policy rejects duplicate rule IDs and action types", () => {
   const rule = {
     id: "same",
     actionType: "inspect_run_receipt" as const,
-    adapterId: "synthetic-automation",
+    adapterId: "governed-automation",
     classification: "green" as const,
     allowedEnvironment: "read_only" as const,
     approvalRequired: false,

@@ -28,7 +28,7 @@ export interface ActionAdapter {
 }
 
 export class SyntheticAutomationAdapter implements ActionAdapter {
-  readonly id = "synthetic-automation";
+  readonly id = "governed-automation";
   readonly version = "1.0.0";
   readonly retryPath: string;
   executeCalls = 0;

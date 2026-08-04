@@ -37,7 +37,7 @@ function request(failure: "none" | "before_effect" | "after_effect" = "none"): A
       retryPayloadHash: "b".repeat(64),
       simulateFailure: failure,
     },
-    target: { adapterId: "synthetic-automation", resourceId: "site-refresh", environment: "synthetic_sandbox" },
+    target: { adapterId: "governed-automation", resourceId: "site-refresh", environment: "synthetic_sandbox" },
     evidence: {
       diagnosticFormat: "context-layer-diagnostic/v1",
       diagnosticHash: "c".repeat(64),
@@ -114,6 +114,24 @@ test("altered caller classification cannot select an execution path", async () =
   });
 
   assert.equal(receipt.result, "stale");
+  assert.equal(state.adapter.executeCalls, 0);
+});
+
+test("runtime adapter identity must match the authorized target", async () => {
+  const action = request();
+  const state = await setup(action);
+  const adapter = Object.assign(Object.create(state.adapter), { id: "other-adapter" });
+
+  const receipt = await executeGovernedAction(action, state.decision, {
+    ...state,
+    adapter,
+    policy,
+    evidence,
+    clock,
+  });
+
+  assert.equal(receipt.result, "refused");
+  assert.equal(receipt.preconditionCheck.passed, false);
   assert.equal(state.adapter.executeCalls, 0);
 });
 

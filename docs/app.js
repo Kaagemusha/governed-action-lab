@@ -52,7 +52,7 @@ function makeReceipt(item, kind) {
     actionDigest: item.decision.actionDigest,
     decisionDigest: item.decision.decisionDigest,
     approvalId: kind === "retry" ? `browser-approval-${item.request.id}` : null,
-    adapter: { id: "synthetic-automation", version: "browser-demo/1" },
+    adapter: { id: "governed-automation", version: "browser-demo/1" },
     result: "succeeded",
     effects: [{
       kind: kind === "read" ? "read" : "create_retry_record",

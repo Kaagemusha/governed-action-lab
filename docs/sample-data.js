@@ -246,14 +246,14 @@ export const SAMPLE_DIAGNOSTIC = {
 export const PUBLIC_POLICY = {
   "schemaVersion": "governed-action-policy/v1",
   "id": "governed-action-lab-public-policy",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "diagnosticFormat": "context-layer-diagnostic/v1",
   "maxEvidenceAgeSeconds": 86400,
   "rules": [
     {
       "id": "rule.inspect.read-only",
       "actionType": "inspect_run_receipt",
-      "adapterId": "synthetic-automation",
+      "adapterId": "governed-automation",
       "classification": "green",
       "allowedEnvironment": "read_only",
       "approvalRequired": false,
@@ -265,7 +265,7 @@ export const PUBLIC_POLICY = {
     {
       "id": "rule.retry.reversible-sandbox",
       "actionType": "retry_failed_lane",
-      "adapterId": "synthetic-automation",
+      "adapterId": "governed-automation",
       "classification": "yellow",
       "allowedEnvironment": "synthetic_sandbox",
       "approvalRequired": true,

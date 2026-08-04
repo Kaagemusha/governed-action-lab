@@ -74,6 +74,9 @@ export async function executeGovernedAction(
   if (currentDecision.disposition === "refuse") {
     return finish("refused", "Policy refused the action before adapter execution.");
   }
+  if (dependencies.adapter.id !== request.target.adapterId) {
+    return finish("refused", "Runtime adapter identity does not match the authorized target.");
+  }
   if (decisionChanged) return finish("stale", "Policy or decision changed; a new decision is required.");
   if (staleEvidence) return finish("stale", "Evidence expired before execution.");
   if (targetChanged) return finish("stale", "Target state changed before execution.");

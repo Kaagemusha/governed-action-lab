@@ -29,7 +29,7 @@ const request: ActionRequest = {
     retryPayloadHash: hash,
     simulateFailure: "none",
   },
-  target: { adapterId: "synthetic-automation", resourceId: "site-refresh", environment: "synthetic_sandbox" },
+  target: { adapterId: "governed-automation", resourceId: "site-refresh", environment: "synthetic_sandbox" },
   evidence: {
     diagnosticFormat: "context-layer-diagnostic/v1",
     diagnosticHash: hash,
@@ -43,7 +43,7 @@ const decision: PolicyDecision = {
   id: "decision",
   requestId: request.id,
   actionDigest: actionDigest(request),
-  policy: { id: "governed-action-lab-public-policy", version: "1.0.0" },
+  policy: { id: "governed-action-lab-public-policy", version: "1.1.0" },
   classification: "yellow",
   disposition: "approval_required",
   reasonCodes: ["APPROVAL_REQUIRED"],

@@ -65,7 +65,7 @@ export function evaluateAction(
   const reasons: Reason[] = [];
   const evidenceIds = request.evidence.recordIds;
   const publicPolicy =
-    manifest.id === "governed-action-lab-public-policy" && manifest.version === "1.0.0";
+    manifest.id === "governed-action-lab-public-policy" && manifest.version === "1.1.0";
 
   if (!publicPolicy) reasons.push(reason("UNKNOWN_POLICY", rule.id, []));
   if (request.evidence.diagnosticFormat !== manifest.diagnosticFormat) {
