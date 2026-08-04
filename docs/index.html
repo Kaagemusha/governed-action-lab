@@ -78,6 +78,17 @@
               </dl>
             </div>
 
+            <div class="operator-review" aria-label="Prepared operator review">
+              <div>
+                <p class="kicker">Prepared review</p>
+                <strong id="review-status"></strong>
+              </div>
+              <div>
+                <span id="review-authority"></span>
+                <small id="review-next"></small>
+              </div>
+            </div>
+
             <div id="approval-boundary" class="approval-boundary" hidden>
               <strong>Agent cannot approve this action.</strong>
               <span>Approval is exact, expires after five minutes, is single-use, and includes failure compensation.</span>
@@ -105,12 +116,13 @@
         <div class="proof-grid">
           <article><strong>Closed catalog</strong><span>No shell strings or model classification</span></article>
           <article><strong>Exact approval</strong><span>Request + decision bound, expiring, single-use</span></article>
-          <article><strong>31 adversarial cases</strong><span>Structured expected outputs</span></article>
+          <article><strong>34 adversarial cases</strong><span>Structured expected outputs</span></article>
           <article><strong>Append-only receipts</strong><span>Bounded effects and before/after hashes</span></article>
         </div>
         <div class="boundary-copy">
           <p><strong>What this proves:</strong> deterministic policy can veto or gate typed synthetic actions and leave inspectable evidence.</p>
           <p><strong>What it does not:</strong> provide production authorization, tamper-proof audit logs, machine isolation, or truth guarantees.</p>
+          <p><strong>Operational proof:</strong> a private scheduled shadow path passed 10/10 supervised cases, including stale, contradictory, unavailable-runtime, and mixed-state evidence, without creating an approval or execution artifact.</p>
           <p><strong>Evidence before authority:</strong> inspect the upstream reasoning in the <a href="https://kaagemusha.github.io/context-layer-lab/">Context Layer Lab</a>.</p>
         </div>
       </section>

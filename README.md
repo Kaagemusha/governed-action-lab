@@ -69,6 +69,19 @@ as one strict `governed-action-review/v1` packet. It never approves or executes.
 The optional six-line brief reports the action, evidence boundary, required
 authority, and next step without a model call.
 
+### Operational proof
+
+The review path now runs after a scheduled private context diagnostic. It
+produces review packets and a compact brief in shadow mode, while leaving
+approval and execution unavailable. A supervised 10-case pilot covered healthy,
+failed, preserved-local, missing, stale, contradictory, mixed, unavailable-
+runtime, transition, and deterministic-replay states. All cases passed and no
+approval, execution, receipt-store, or retry artifact was created.
+
+The public console uses synthetic data to show the same status and authority
+boundary. No private diagnostic, lane identifier, path, or operating record is
+published in this repository.
+
 The lower-level lifecycle remains available for inspecting each boundary:
 
 ```bash

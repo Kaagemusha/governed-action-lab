@@ -9,6 +9,7 @@ const elements = Object.fromEntries(
     "environment","approval-boundary","receipt-panel","receipt-result","effect-detail",
     "verification-detail","rollback-detail","run-action","export-receipt",
     "approval-dialog","approval-target","approval-evidence","approval-expiry","confirm-approval",
+    "review-status","review-authority","review-next",
   ].map((id) => [id, document.getElementById(id)]),
 );
 const actionLabels = {
@@ -109,6 +110,20 @@ function render() {
   elements["policy-rule"].textContent = decision.reasons[0].policyRuleId;
   elements["adapter-id"].textContent = decision.classification === "red" ? "None executable" : item.request.target.adapterId;
   elements["environment"].textContent = item.request.target.environment.replaceAll("_", " ");
+  const reviewStatus = {
+    allow: "READY",
+    approval_required: "APPROVAL REQUIRED",
+    refuse: "REFUSED",
+  }[decision.disposition];
+  elements["review-status"].textContent = reviewStatus;
+  elements["review-authority"].textContent =
+    decision.disposition === "allow" ? "Read-only policy permits the bounded action." :
+    decision.disposition === "approval_required" ? "A separate human must approve this exact request." :
+    "Policy refusal cannot be overridden by approval.";
+  elements["review-next"].textContent =
+    decision.disposition === "allow" ? "Recheck current state before the read." :
+    decision.disposition === "approval_required" ? "Inspect target, effect, evidence, expiry, and rollback before deciding." :
+    "Use the stated safer alternative; do not execute.";
   elements["approval-boundary"].hidden = decision.classification !== "yellow";
   elements["run-action"].textContent =
     selectedType === "inspect_run_receipt" ? "Run read-only inspection" :

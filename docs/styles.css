@@ -100,6 +100,12 @@ dl { margin: 0; }
 .policy-block dl, .receipt-panel dl { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
 dl div { display: grid; gap: 5px; }
 dd { margin: 0; overflow-wrap: anywhere; font-size: .78rem; }
+.operator-review { display: grid; grid-template-columns: 170px 1fr; gap: 20px; align-items: start; margin: 0 0 22px; padding: 16px; border: 1px solid var(--line); background: var(--panel-soft); }
+.operator-review > div { display: grid; gap: 5px; }
+.operator-review .kicker { margin: 0; }
+.operator-review strong { color: var(--navy); font-family: "SFMono-Regular","Cascadia Mono",Consolas,monospace; font-size: .72rem; letter-spacing: .07em; }
+.operator-review span { font-size: .82rem; font-weight: 700; }
+.operator-review small { color: var(--muted); line-height: 1.45; }
 .approval-boundary { display: grid; gap: 5px; margin-bottom: 22px; padding: 14px 16px; border-left: 4px solid var(--amber); color: #654512; background: var(--amber-soft); font-size: .82rem; }
 .receipt-panel { margin: 0 0 22px; padding: 18px; border: 1px solid #abc9bb; background: var(--green-soft); }
 .receipt-panel > div { margin-bottom: 15px; }
@@ -144,6 +150,7 @@ dialog dl { display: grid; gap: 14px; padding: 18px 0; border-block: 1px solid v
   .evidence-strip { display: block; }
   .evidence-strip > div + div { padding-left: 0; border-top: 1px solid var(--line); border-left: 0; }
   .policy-block dl, .receipt-panel dl { grid-template-columns: 1fr; }
+  .operator-review { grid-template-columns: 1fr; }
   .primary-action { display: grid; }
   .proof { display: grid; grid-template-columns: 1fr; padding-top: 44px; }
   .proof-grid { grid-template-columns: 1fr; }
