@@ -255,7 +255,13 @@ const contextRecordSchema = z
     owner: id,
     updatedAt: instant,
     validUntil: instant,
-    sources: z.array(z.object({ id, label: id, url: z.string().url(), observedAt: instant }).strict()),
+    sources: z.array(z.object({
+      id,
+      label: id,
+      url: z.string().url(),
+      observedAt: instant,
+      contentHash: digest.optional(),
+    }).strict()),
     claims: z.array(z.object({ text: id, sourceIds: z.array(id) }).strict()),
   })
   .strict();
