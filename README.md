@@ -3,6 +3,13 @@
 A small, inspectable reference implementation showing that an agent's proposed
 action is not authorization.
 
+**Status: reference implementation, not a production authorization system.**
+This repository demonstrates deterministic policy gates, non-mintable operator
+approvals, and cryptographic action receipts as a teaching and portfolio
+artifact. It does not provide production identity, RBAC, isolation, or a
+tamper-proof external log, and it has not been hardened against adversarial
+misuse.
+
 **[Open the live governed-action console](https://kaagemusha.github.io/governed-action-lab/)**
 
 The lab places a deterministic governance boundary between a typed proposal and
