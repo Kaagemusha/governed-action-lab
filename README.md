@@ -153,18 +153,22 @@ Together they form a deliberately narrow handoff from evidence reconciliation
 to bounded execution, rather than one agent-controlled system that conflates
 truth, permission, and authority.
 
-The frozen public fixture consumes `context-layer-diagnostic/v1` from producer
-commit `b0179a8e365ab35691864e55d5792db1bdefbcb2`. Its metadata binds the exact
-producer artifact and fixture SHA-256; `npm run contract:check` fails if the
-local handoff drifts. During paired development, add
+The frozen public default still consumes `context-layer-diagnostic/v1` from
+producer commit `b0179a8e365ab35691864e55d5792db1bdefbcb2`. A second frozen
+contract fixture accepts evidence-bound `context-layer-diagnostic/v2` from
+producer commit `5d74a5c5a0d1269a916612bcc69db60003ea69b8`. Metadata binds each
+exact producer artifact and fixture SHA-256; `npm run contract:check` fails if
+either local handoff drifts. During paired development, add
 `-- --producer-root ../context-layer-lab` to verify the frozen bytes against a
 sibling producer checkout. The consumer validates the complete packet, binds
-the request to its SHA-256 digest, and independently checks the selected lane's
-latest raw receipt. It does not import sibling source files or duplicate the
-producer's broader health logic.
+the request to its SHA-256 digest, independently checks the selected lane's
+latest raw receipt and due window, and verifies v2 typed evidence bindings. It
+does not import sibling source files or duplicate the producer's broader health
+logic. The public sample remains v1 until the producer's v2 rollout completes;
+imported v1 and v2 packets are both governed now.
 
 ```text
-Context diagnostic v1
+Context diagnostic v1 or v2
   -> strict consumer adapter
   -> typed action request
   -> deterministic policy gate
@@ -178,7 +182,7 @@ Context diagnostic v1
 
 ```mermaid
 flowchart LR
-    C["Context diagnostic v1"] --> A["Strict context adapter"]
+    C["Context diagnostic v1 or v2"] --> A["Strict context adapter"]
     A --> Q["Typed action request"]
     Q --> P["Deterministic policy"]
     P -->|green| X["Allowlisted adapter"]
@@ -205,12 +209,13 @@ than reimplemented.
 Strict Zod schemas reject unknown keys at persisted and transport boundaries:
 
 - `governed-action-review/v1`
+- `governed-action-review/v2` for evidence-bound diagnostic v2
 - `governed-action-request/v1`
 - `governed-action-decision/v1`
 - `governed-action-approval/v1`
 - `governed-action-receipt/v1`
 - `governed-action-policy/v1`
-- frozen consumer for `context-layer-diagnostic/v1`
+- dual-read consumer for `context-layer-diagnostic/v1` and evidence-bound `v2`
 
 Canonical JSON recursively sorts keys and rejects non-JSON values before
 SHA-256 hashing. An approval binds both the complete request digest and the
@@ -220,6 +225,11 @@ the complete action digest. A concurrent duplicate reports in-progress, a
 different action reports a conflict, and any receipt with effects is replayed
 rather than executed again. A same-action refusal with no effects may be
 retried after its missing precondition is supplied.
+
+Bundled policy `1.2.0` keeps diagnostic v1 as its public default and explicitly
+allows v2 as a compatible evidence format. Legacy policy `1.1.0` remains
+v1-only; changing the policy version deliberately invalidates earlier decision
+and approval digests.
 
 Receipts are append-only in this implementation, not tamper-proof audit logs.
 Digest verification detects changed content; it does not defend against a

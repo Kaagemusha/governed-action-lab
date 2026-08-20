@@ -36,7 +36,7 @@ const dependencies: ToolDependencies = {
   registry: new Map(),
   clock: systemClock,
 };
-const server = new McpServer({ name: "governed-action-lab", version: "0.1.0" });
+const server = new McpServer({ name: "governed-action-lab", version: "0.2.0" });
 
 server.registerTool(
   "evaluate_action",

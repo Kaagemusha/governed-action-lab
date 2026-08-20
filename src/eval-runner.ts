@@ -176,7 +176,7 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
     } else if (id === "13-missing-evidence") {
       changed.records = changed.records.filter((record: { id: string }) => record.id !== "site-refresh-receipt");
     } else if (id === "14-unsupported-diagnostic") {
-      changed.format = "context-layer-diagnostic/v2";
+      changed.format = "context-layer-diagnostic/v3";
     } else {
       changed.assessment.evidenceQuality["site-refresh-receipt"] = { state: "invalid", issues: [] };
     }

@@ -38,11 +38,15 @@ function parseDiagnostic(input: unknown): DiagnosticSnapshot {
 function narrowLaneInvariant(snapshot: DiagnosticSnapshot, laneId: string) {
   const lane = snapshot.scenario.lanes.find((candidate) => candidate.id === laneId);
   if (!lane) throw new Error(`Lane "${laneId}" is absent from the diagnostic.`);
+  const asOf = new Date(snapshot.scenario.asOf).getTime();
+  if (new Date(lane.dueAt).getTime() > asOf) {
+    throw new Error(`Lane "${laneId}" is not yet due.`);
+  }
   const receipts = snapshot.scenario.receipts
     .filter(
       (receipt) =>
         receipt.laneId === laneId &&
-        new Date(receipt.observedAt).getTime() <= new Date(snapshot.scenario.asOf).getTime(),
+        new Date(receipt.observedAt).getTime() <= asOf,
     )
     .sort(
       (left, right) =>
@@ -50,6 +54,9 @@ function narrowLaneInvariant(snapshot: DiagnosticSnapshot, laneId: string) {
     );
   const latest = receipts[0];
   if (!latest) throw new Error(`Lane "${laneId}" has no eligible receipt.`);
+  if (new Date(latest.observedAt).getTime() < new Date(lane.dueAt).getTime()) {
+    throw new Error(`Lane "${laneId}" has no receipt from its current due window.`);
+  }
   const assessment = snapshot.assessment.laneAssessments.find((candidate) => candidate.id === laneId);
   if (
     !assessment ||

@@ -40,6 +40,73 @@ test("green inspection is allowed and deterministic", () => {
   assert.deepEqual(first, second);
 });
 
+test("policy accepts v1 and v2 diagnostics but refuses unknown formats", () => {
+  for (const diagnosticFormat of [
+    "context-layer-diagnostic/v1",
+    "context-layer-diagnostic/v2",
+  ]) {
+    const decision = evaluateAction(
+      {
+        ...base,
+        evidence: { ...base.evidence, diagnosticFormat },
+      },
+      policy,
+      eligible,
+      clock,
+    );
+    assert.equal(decision.disposition, "allow");
+  }
+  const refused = evaluateAction(
+    {
+      ...base,
+      evidence: {
+        ...base.evidence,
+        diagnosticFormat: "context-layer-diagnostic/v3",
+      },
+    },
+    policy,
+    eligible,
+    clock,
+  );
+  assert.equal(refused.disposition, "refuse");
+  assert.ok(refused.reasonCodes.includes("UNSUPPORTED_DIAGNOSTIC"));
+});
+
+test("legacy public policy 1.1 remains v1-only", () => {
+  const {
+    acceptedDiagnosticFormats: _acceptedDiagnosticFormats,
+    ...legacyPolicy
+  } = policy;
+  const manifest = { ...legacyPolicy, version: "1.1.0" };
+  const v1 = evaluateAction(base, manifest, eligible, clock);
+  assert.equal(v1.disposition, "allow");
+
+  const v2 = evaluateAction(
+    {
+      ...base,
+      evidence: {
+        ...base.evidence,
+        diagnosticFormat: "context-layer-diagnostic/v2",
+      },
+    },
+    manifest,
+    eligible,
+    clock,
+  );
+  assert.equal(v2.disposition, "refuse");
+  assert.ok(v2.reasonCodes.includes("UNSUPPORTED_DIAGNOSTIC"));
+  assert.throws(
+    () =>
+      evaluateAction(
+        base,
+        { ...policy, version: "1.1.0" },
+        eligible,
+        clock,
+      ),
+    /Public policy 1\.1\.0 is v1-only/,
+  );
+});
+
 test("yellow retry requires approval and reversibility", () => {
   const request: ActionRequest = {
     ...base,

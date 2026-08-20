@@ -1,4 +1,7 @@
-import { diagnosticSnapshotSchema, type DiagnosticSnapshot } from "./contracts.js";
+import {
+  diagnosticSnapshotV1Schema,
+  type DiagnosticSnapshotV1,
+} from "./contracts.js";
 
 const ISO_INSTANT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/;
 
@@ -15,10 +18,13 @@ function shiftInstants(value: unknown, deltaMs: number): unknown {
   return value;
 }
 
-export function freshenPublicFixture(input: unknown, targetAsOf = new Date()): DiagnosticSnapshot {
-  const fixture = diagnosticSnapshotSchema.parse(input);
+export function freshenPublicFixture(
+  input: unknown,
+  targetAsOf = new Date(),
+): DiagnosticSnapshotV1 {
+  const fixture = diagnosticSnapshotV1Schema.parse(input);
   if (!Number.isFinite(targetAsOf.getTime())) throw new Error("Target time must be a valid instant.");
   const sourceAsOf = new Date(fixture.scenario.asOf).getTime();
   const shifted = shiftInstants(fixture, targetAsOf.getTime() - sourceAsOf);
-  return diagnosticSnapshotSchema.parse(shifted);
+  return diagnosticSnapshotV1Schema.parse(shifted);
 }

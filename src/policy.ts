@@ -65,10 +65,19 @@ export function evaluateAction(
   const reasons: Reason[] = [];
   const evidenceIds = request.evidence.recordIds;
   const publicPolicy =
-    manifest.id === "governed-action-lab-public-policy" && manifest.version === "1.1.0";
+    manifest.id === "governed-action-lab-public-policy" &&
+    ["1.1.0", "1.2.0"].includes(manifest.version);
 
   if (!publicPolicy) reasons.push(reason("UNKNOWN_POLICY", rule.id, []));
-  if (request.evidence.diagnosticFormat !== manifest.diagnosticFormat) {
+  const acceptedDiagnosticFormats =
+    manifest.version === "1.1.0"
+      ? [manifest.diagnosticFormat]
+      : (manifest.acceptedDiagnosticFormats ?? [manifest.diagnosticFormat]);
+  if (
+    !acceptedDiagnosticFormats.some(
+      (format) => format === request.evidence.diagnosticFormat,
+    )
+  ) {
     reasons.push(reason("UNSUPPORTED_DIAGNOSTIC", rule.id, evidenceIds));
   }
   if (rule.adapterId === null || !ACTION_CATALOG[request.action.type].executable) {

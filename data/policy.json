@@ -1,8 +1,12 @@
 {
   "schemaVersion": "governed-action-policy/v1",
   "id": "governed-action-lab-public-policy",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "diagnosticFormat": "context-layer-diagnostic/v1",
+  "acceptedDiagnosticFormats": [
+    "context-layer-diagnostic/v1",
+    "context-layer-diagnostic/v2"
+  ],
   "maxEvidenceAgeSeconds": 86400,
   "rules": [
     {

@@ -1,6 +1,6 @@
 {
   "name": "governed-action-lab",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A deterministic reference implementation for governing agent actions.",
   "type": "module",
   "private": false,

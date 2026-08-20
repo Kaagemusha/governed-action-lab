@@ -24,3 +24,10 @@ test("fresh public fixture rejects an invalid target time", async () => {
   const fixture = JSON.parse(await readFile("examples/context-layer-diagnostic.json", "utf8"));
   assert.throws(() => freshenPublicFixture(fixture, new Date("invalid")), /valid instant/);
 });
+
+test("public fixture freshening remains pinned to v1", async () => {
+  const fixture = JSON.parse(
+    await readFile("examples/context-layer-diagnostic-v2.json", "utf8"),
+  );
+  assert.throws(() => freshenPublicFixture(fixture), /format/);
+});

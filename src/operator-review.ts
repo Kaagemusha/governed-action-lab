@@ -1,7 +1,9 @@
 import type { ActionAdapter } from "./adapters/synthetic-automation.js";
 import { digestOmitting, sha256 } from "./canonical.js";
 import {
+  DIAGNOSTIC_V2_VERSION,
   REVIEW_VERSION,
+  REVIEW_V2_VERSION,
   actionReviewSchema,
   type ActionReview,
   type CatalogAction,
@@ -35,15 +37,27 @@ export async function prepareActionReview(
     approval_required: "APPROVAL_REQUIRED",
     refuse: "REFUSED",
   }[decision.disposition] as ActionReview["status"];
-  const diagnostic = {
-    format: proposal.diagnostic.format,
-    digest: proposal.request.evidence.diagnosticHash,
-    asOf: proposal.diagnostic.scenario.asOf,
-  };
+  const versioned =
+    proposal.diagnostic.format === DIAGNOSTIC_V2_VERSION
+      ? {
+          schemaVersion: REVIEW_V2_VERSION,
+          diagnostic: {
+            format: DIAGNOSTIC_V2_VERSION,
+            digest: proposal.request.evidence.diagnosticHash,
+            asOf: proposal.diagnostic.scenario.asOf,
+          },
+        } as const
+      : {
+          schemaVersion: REVIEW_VERSION,
+          diagnostic: {
+            format: proposal.diagnostic.format,
+            digest: proposal.request.evidence.diagnosticHash,
+            asOf: proposal.diagnostic.scenario.asOf,
+          },
+        } as const;
   const partial = {
-    schemaVersion: REVIEW_VERSION,
+    ...versioned,
     id: `review-${sha256({ request: proposal.request, decision }).slice(0, 16)}`,
-    diagnostic,
     request: proposal.request,
     decision,
     plan,
@@ -75,6 +89,9 @@ export function verifyActionReview(input: unknown): ActionReview {
   }
   if (review.diagnostic.digest !== review.request.evidence.diagnosticHash) {
     throw new Error("Review diagnostic digest does not match the request evidence.");
+  }
+  if (review.diagnostic.format !== review.request.evidence.diagnosticFormat) {
+    throw new Error("Review diagnostic format does not match the request evidence.");
   }
   if (review.diagnostic.asOf !== review.request.evidence.asOf) {
     throw new Error("Review diagnostic time does not match the request evidence.");
