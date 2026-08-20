@@ -154,10 +154,14 @@ to bounded execution, rather than one agent-controlled system that conflates
 truth, permission, and authority.
 
 The frozen public fixture consumes `context-layer-diagnostic/v1` from producer
-commit `b0179a8e365ab35691864e55d5792db1bdefbcb2`. The consumer validates the
-complete packet, binds the request to its SHA-256 digest, and independently
-checks the selected lane's latest raw receipt. It does not import sibling source
-files or duplicate the producer's broader health logic.
+commit `b0179a8e365ab35691864e55d5792db1bdefbcb2`. Its metadata binds the exact
+producer artifact and fixture SHA-256; `npm run contract:check` fails if the
+local handoff drifts. During paired development, add
+`-- --producer-root ../context-layer-lab` to verify the frozen bytes against a
+sibling producer checkout. The consumer validates the complete packet, binds
+the request to its SHA-256 digest, and independently checks the selected lane's
+latest raw receipt. It does not import sibling source files or duplicate the
+producer's broader health logic.
 
 ```text
 Context diagnostic v1
