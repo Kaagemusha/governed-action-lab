@@ -77,7 +77,11 @@ test("legacy public policy 1.1 remains v1-only", () => {
     acceptedDiagnosticFormats: _acceptedDiagnosticFormats,
     ...legacyPolicy
   } = policy;
-  const manifest = { ...legacyPolicy, version: "1.1.0" };
+  const manifest = {
+    ...legacyPolicy,
+    version: "1.1.0",
+    diagnosticFormat: "context-layer-diagnostic/v1" as const,
+  };
   const v1 = evaluateAction(base, manifest, eligible, clock);
   assert.equal(v1.disposition, "allow");
 
@@ -104,6 +108,23 @@ test("legacy public policy 1.1 remains v1-only", () => {
         clock,
       ),
     /Public policy 1\.1\.0 is v1-only/,
+  );
+});
+
+test("policy versions lock their declared default while retaining compatible reads", () => {
+  assert.throws(
+    () => evaluateAction(base, { ...policy, version: "1.2.0" }, eligible, clock),
+    /Public policy 1\.2\.0 must accept exactly diagnostic v1 and v2/,
+  );
+  assert.throws(
+    () =>
+      evaluateAction(
+        base,
+        { ...policy, diagnosticFormat: "context-layer-diagnostic/v1" },
+        eligible,
+        clock,
+      ),
+    /Public policy 1\.3\.0 must default to diagnostic v2/,
   );
 });
 

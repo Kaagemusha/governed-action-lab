@@ -1,5 +1,5 @@
 export const SAMPLE_DIAGNOSTIC = {
-  "format": "context-layer-diagnostic/v1",
+  "format": "context-layer-diagnostic/v2",
   "scenario": {
     "question": "Are all scheduled automations healthy?",
     "asOf": "2026-07-28T09:10:00Z",
@@ -146,7 +146,34 @@ export const SAMPLE_DIAGNOSTIC = {
           "text": "All scheduled automation lanes are healthy.",
           "sourceIds": [
             "dashboard-snapshot-0730"
-          ]
+          ],
+          "operational": {
+            "kind": "summary",
+            "observedAt": "2026-07-28T07:30:00Z",
+            "verdict": "healthy",
+            "lanes": [
+              {
+                "id": "morning-brief",
+                "label": "Morning Brief",
+                "dueAt": "2026-07-28T07:55:00Z"
+              },
+              {
+                "id": "site-refresh",
+                "label": "Site Refresh",
+                "dueAt": "2026-07-28T08:15:00Z"
+              },
+              {
+                "id": "research-watch",
+                "label": "Research Watch",
+                "dueAt": "2026-07-28T08:30:00Z"
+              },
+              {
+                "id": "ai-radar",
+                "label": "AI Radar",
+                "dueAt": "2026-07-28T17:30:00Z"
+              }
+            ]
+          }
         }
       ]
     },
@@ -176,7 +203,13 @@ export const SAMPLE_DIAGNOSTIC = {
           "text": "The Morning Brief run completed successfully.",
           "sourceIds": [
             "morning-run-0802"
-          ]
+          ],
+          "operational": {
+            "kind": "receipt",
+            "laneId": "morning-brief",
+            "observedAt": "2026-07-28T08:02:00Z",
+            "outcome": "success"
+          }
         }
       ]
     },
@@ -206,7 +239,13 @@ export const SAMPLE_DIAGNOSTIC = {
           "text": "The Research Watch output is preserved locally and is not integrated.",
           "sourceIds": [
             "research-run-0905"
-          ]
+          ],
+          "operational": {
+            "kind": "receipt",
+            "laneId": "research-watch",
+            "observedAt": "2026-07-28T09:05:00Z",
+            "outcome": "preserved_local"
+          }
         }
       ]
     },
@@ -236,7 +275,13 @@ export const SAMPLE_DIAGNOSTIC = {
           "text": "The Site Refresh run failed before deployment.",
           "sourceIds": [
             "site-run-0840"
-          ]
+          ],
+          "operational": {
+            "kind": "receipt",
+            "laneId": "site-refresh",
+            "observedAt": "2026-07-28T08:40:00Z",
+            "outcome": "failed"
+          }
         }
       ]
     }
@@ -246,11 +291,11 @@ export const SAMPLE_DIAGNOSTIC = {
 export const PUBLIC_POLICY = {
   "schemaVersion": "governed-action-policy/v1",
   "id": "governed-action-lab-public-policy",
-  "version": "1.2.0",
-  "diagnosticFormat": "context-layer-diagnostic/v1",
+  "version": "1.3.0",
+  "diagnosticFormat": "context-layer-diagnostic/v2",
   "acceptedDiagnosticFormats": [
-    "context-layer-diagnostic/v1",
-    "context-layer-diagnostic/v2"
+    "context-layer-diagnostic/v2",
+    "context-layer-diagnostic/v1"
   ],
   "maxEvidenceAgeSeconds": 86400,
   "rules": [

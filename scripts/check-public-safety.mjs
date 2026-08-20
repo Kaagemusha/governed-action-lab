@@ -112,7 +112,7 @@ function validatePortableProof(content, findings) {
   fail(packet.diagnosticSource?.diagnosticCanonicalSha256 === "3856460b1b54ff9dcfe7b86e442dac7ca1dc021c9d835f486f609950efab69c5", "fixture canonical digest is not frozen");
   fail(packet.diagnostic?.format === "context-layer-diagnostic/v2", "embedded diagnostic is not v2");
   fail(packet.diagnostic?.scenario?.asOf === "2026-07-28T09:10:00Z", "diagnostic time is not frozen");
-  fail(packet.policy?.schemaVersion === "governed-action-policy/v1" && packet.policy?.id === "governed-action-lab-public-policy" && packet.policy?.version === "1.2.0", "proof does not embed public policy 1.2.0");
+  fail(packet.policy?.schemaVersion === "governed-action-policy/v1" && packet.policy?.id === "governed-action-lab-public-policy" && packet.policy?.version === "1.3.0", "proof does not embed public policy 1.3.0");
   fail(packet.review?.schemaVersion === "governed-action-review/v2" && packet.review?.status === "READY", "proof review is not READY v2");
   fail(packet.review?.request?.action?.type === "inspect_run_receipt" && packet.review?.request?.action?.laneId === "site-refresh", "proof action is not the bounded green inspection");
   fail(packet.review?.request?.target?.environment === "read_only", "proof target is not read-only");

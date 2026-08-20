@@ -248,7 +248,7 @@ export const policyManifestSchema = z
     schemaVersion: z.literal(POLICY_VERSION),
     id,
     version: id,
-    diagnosticFormat: z.literal(DIAGNOSTIC_VERSION),
+    diagnosticFormat: diagnosticVersionSchema,
     acceptedDiagnosticFormats: z.array(diagnosticVersionSchema).min(1).optional(),
     maxEvidenceAgeSeconds: z.number().int().positive(),
     rules: z.array(policyRuleSchema).length(3),
@@ -281,9 +281,9 @@ export const policyManifestSchema = z
     if (
       value.id === "governed-action-lab-public-policy" &&
       value.version === "1.1.0" &&
-      value.acceptedDiagnosticFormats !== undefined &&
-      (value.acceptedDiagnosticFormats.length !== 1 ||
-        value.acceptedDiagnosticFormats[0] !== DIAGNOSTIC_VERSION)
+      (value.diagnosticFormat !== DIAGNOSTIC_VERSION ||
+        accepted.length !== 1 ||
+        accepted[0] !== DIAGNOSTIC_VERSION)
     ) {
       context.addIssue({
         code: "custom",
@@ -294,7 +294,8 @@ export const policyManifestSchema = z
     if (
       value.id === "governed-action-lab-public-policy" &&
       value.version === "1.2.0" &&
-      (!accepted.includes(DIAGNOSTIC_VERSION) ||
+      (value.diagnosticFormat !== DIAGNOSTIC_VERSION ||
+        !accepted.includes(DIAGNOSTIC_VERSION) ||
         !accepted.includes(DIAGNOSTIC_V2_VERSION) ||
         accepted.length !== 2)
     ) {
@@ -302,6 +303,20 @@ export const policyManifestSchema = z
         code: "custom",
         path: ["acceptedDiagnosticFormats"],
         message: "Public policy 1.2.0 must accept exactly diagnostic v1 and v2.",
+      });
+    }
+    if (
+      value.id === "governed-action-lab-public-policy" &&
+      value.version === "1.3.0" &&
+      (value.diagnosticFormat !== DIAGNOSTIC_V2_VERSION ||
+        !accepted.includes(DIAGNOSTIC_VERSION) ||
+        !accepted.includes(DIAGNOSTIC_V2_VERSION) ||
+        accepted.length !== 2)
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["acceptedDiagnosticFormats"],
+        message: "Public policy 1.3.0 must default to diagnostic v2 and accept exactly v1 and v2.",
       });
     }
   });

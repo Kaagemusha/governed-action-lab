@@ -302,11 +302,11 @@
   "policy": {
     "schemaVersion": "governed-action-policy/v1",
     "id": "governed-action-lab-public-policy",
-    "version": "1.2.0",
-    "diagnosticFormat": "context-layer-diagnostic/v1",
+    "version": "1.3.0",
+    "diagnosticFormat": "context-layer-diagnostic/v2",
     "acceptedDiagnosticFormats": [
-      "context-layer-diagnostic/v1",
-      "context-layer-diagnostic/v2"
+      "context-layer-diagnostic/v2",
+      "context-layer-diagnostic/v1"
     ],
     "maxEvidenceAgeSeconds": 86400,
     "rules": [
@@ -355,7 +355,7 @@
       "digest": "3856460b1b54ff9dcfe7b86e442dac7ca1dc021c9d835f486f609950efab69c5",
       "asOf": "2026-07-28T09:10:00Z"
     },
-    "id": "review-ee2f794a7edb04d8",
+    "id": "review-e31203ac959a05b1",
     "request": {
       "schemaVersion": "governed-action-request/v1",
       "id": "request-55829d90d51c1359",
@@ -395,7 +395,7 @@
       "actionDigest": "655c01b8e1661a148d8cc2c9b0ff5cabd3b91179e0b8a893f7fb451f91504866",
       "policy": {
         "id": "governed-action-lab-public-policy",
-        "version": "1.2.0"
+        "version": "1.3.0"
       },
       "classification": "green",
       "disposition": "allow",
@@ -414,14 +414,14 @@
       ],
       "requirements": [],
       "decisionAt": "2026-07-28T09:10:00.000Z",
-      "decisionDigest": "df517a9124e1fe9f372e2c7df03240dd52a29ca6f0dc7ef9509b4e72a655fc41"
+      "decisionDigest": "5ef48874843a4b925a94ad1f984e91e0273547183949b566b9a8a8cf5031972f"
     },
     "plan": {
       "effect": "Read receipt site-refresh-receipt.",
       "reversible": false
     },
     "status": "READY",
-    "reviewDigest": "22ca70fd31115550b27907a425ea5b21a2738356a3563542ebb76b703c733777"
+    "reviewDigest": "e30dc21c52fbaa794ac6c5e912b9ccf382d8987347f2d3e662917e85df0e2a01"
   },
   "approvalBoundary": {
     "required": false,
@@ -432,7 +432,7 @@
     "id": "receipt-portable-green-v2",
     "requestId": "request-55829d90d51c1359",
     "actionDigest": "655c01b8e1661a148d8cc2c9b0ff5cabd3b91179e0b8a893f7fb451f91504866",
-    "decisionDigest": "df517a9124e1fe9f372e2c7df03240dd52a29ca6f0dc7ef9509b4e72a655fc41",
+    "decisionDigest": "5ef48874843a4b925a94ad1f984e91e0273547183949b566b9a8a8cf5031972f",
     "approvalId": null,
     "adapter": {
       "id": "governed-automation",
@@ -464,7 +464,7 @@
       "result": "not_needed"
     },
     "previousReceiptId": null,
-    "receiptDigest": "a94f8e127e07c00b34bde44766596fbf65d3e3ab834244276139ae78f7312144"
+    "receiptDigest": "929801c06b854cbf31aef90dd730bbd7eb7b1f19509fb2def2fb351290951d9e"
   },
-  "packetDigest": "b42943342027c10b7a45d8dee080a07feb7350f7529c33b21ae75ab5d15c432d"
+  "packetDigest": "3ecc78e47aac4b4ba8217ea006c466c334bbda3498ea2edeb0f68e94273eecd3"
 }

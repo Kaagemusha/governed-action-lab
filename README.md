@@ -108,7 +108,7 @@ record is published in this repository.
 
 The repository also publishes one frozen, portable green proof packet at
 [`docs/governed-action-proof.json`](docs/governed-action-proof.json). It embeds
-the exact Context Layer v2 fixture, public policy 1.2.0, recomputed READY review,
+the exact Context Layer v2 fixture, public policy 1.3.0, recomputed READY review,
 and a successful approval-free receipt generated through the actual synthetic
 executor's read path. Generate or verify byte-for-byte drift with:
 
@@ -176,10 +176,10 @@ Together they form a deliberately narrow handoff from evidence reconciliation
 to bounded execution, rather than one agent-controlled system that conflates
 truth, permission, and authority.
 
-The frozen public default still consumes `context-layer-diagnostic/v1` from
-producer commit `b0179a8e365ab35691864e55d5792db1bdefbcb2`. A second frozen
-contract fixture accepts evidence-bound `context-layer-diagnostic/v2` from
-producer commit `5d74a5c5a0d1269a916612bcc69db60003ea69b8`. Metadata binds each
+The public default consumes evidence-bound `context-layer-diagnostic/v2` from
+producer commit `5d74a5c5a0d1269a916612bcc69db60003ea69b8`. A frozen compatibility
+fixture retains `context-layer-diagnostic/v1` from producer commit
+`b0179a8e365ab35691864e55d5792db1bdefbcb2`. Metadata binds each
 exact producer artifact and fixture SHA-256; `npm run contract:check` fails if
 either local handoff drifts. During paired development, add
 `-- --producer-root ../context-layer-lab` to verify the frozen bytes against a
@@ -187,8 +187,7 @@ sibling producer checkout. The consumer validates the complete packet, binds
 the request to its SHA-256 digest, independently checks the selected lane's
 latest raw receipt and due window, and verifies v2 typed evidence bindings. It
 does not import sibling source files or duplicate the producer's broader health
-logic. The public sample remains v1 until the producer's v2 rollout completes;
-imported v1 and v2 packets are both governed now.
+logic. The public sample is v2; imported v1 and v2 packets are both governed.
 
 ```text
 Context diagnostic v1 or v2
@@ -249,10 +248,10 @@ different action reports a conflict, and any receipt with effects is replayed
 rather than executed again. A same-action refusal with no effects may be
 retried after its missing precondition is supplied.
 
-Bundled policy `1.2.0` keeps diagnostic v1 as its public default and explicitly
-allows v2 as a compatible evidence format. Legacy policy `1.1.0` remains
-v1-only; changing the policy version deliberately invalidates earlier decision
-and approval digests.
+Bundled policy `1.3.0` makes diagnostic v2 the public default and explicitly
+retains v1 as a compatible evidence format. Policy `1.2.0` was the dual-read,
+v1-default transition; legacy policy `1.1.0` remains v1-only. Changing the
+policy version deliberately invalidates earlier decision and approval digests.
 
 Receipts are append-only in this implementation, not tamper-proof audit logs.
 Digest verification detects changed content; it does not defend against a

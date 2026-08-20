@@ -26,7 +26,7 @@ export const PORTABLE_PROOF_SOURCE = {
 } as const;
 
 export const PORTABLE_PROOF_POLICY_SHA256 =
-  "eea890081cf334e1bab24c08daf050d76848adff410c2817733c542243cd5665";
+  "8c50cd5756e5da687404fc295bf1e17738c81d86ff6b430fda798fb99cca6e7c";
 export const PORTABLE_PROOF_LANE = "site-refresh";
 export const PORTABLE_PROOF_RECEIPT_ID = "receipt-portable-green-v2";
 
@@ -49,7 +49,7 @@ function assertFrozenSource(source: ProofPacket["diagnosticSource"]): void {
 function assertTrustedPolicy(policy: PolicyManifest): void {
   invariant(policy.schemaVersion === "governed-action-policy/v1", "policy schema is not v1");
   invariant(policy.id === "governed-action-lab-public-policy", "policy identity is not public");
-  invariant(policy.version === "1.2.0", "policy version is not 1.2.0");
+  invariant(policy.version === "1.3.0", "policy version is not 1.3.0");
   invariant(sha256(policy) === PORTABLE_PROOF_POLICY_SHA256, "policy differs from the trusted public policy");
 }
 

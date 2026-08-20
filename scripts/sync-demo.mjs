@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 
-const diagnostic = JSON.parse(await readFile("examples/context-layer-diagnostic.json", "utf8"));
+const diagnostic = JSON.parse(await readFile("examples/context-layer-diagnostic-v2.json", "utf8"));
 const policy = JSON.parse(await readFile("data/policy.json", "utf8"));
 const expected = `export const SAMPLE_DIAGNOSTIC = ${JSON.stringify(diagnostic, null, 2)};\n\nexport const PUBLIC_POLICY = ${JSON.stringify(policy, null, 2)};\n`;
 const path = "docs/sample-data.js";

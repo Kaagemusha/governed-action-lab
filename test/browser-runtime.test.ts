@@ -28,7 +28,7 @@ test("browser builds all paths from shared core policy", () => {
   );
 });
 
-test("browser accepts the staged v2 diagnostic without changing the public default", () => {
+test("browser uses the promoted v2 diagnostic", () => {
   const demo = buildPublicDemo(diagnosticV2, policy, clock);
   assert.deepEqual(
     demo.map((item) => [item.decision.classification, item.decision.disposition]),
