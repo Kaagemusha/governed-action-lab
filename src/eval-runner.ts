@@ -20,7 +20,7 @@ import {
   type PolicyManifest,
 } from "./contracts.js";
 import { proposeActionFromDiagnostic } from "./context-adapter.js";
-import { executeGovernedAction } from "./executor.js";
+import { executeGovernedAction, IdempotencyStateError } from "./executor.js";
 import { evaluateAction } from "./policy.js";
 import { prepareActionReview, verifyActionReview } from "./operator-review.js";
 import { verifyReceipt } from "./receipts.js";
@@ -268,7 +268,8 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
     } catch (error) {
       return {
         code:
-          error instanceof Error && error.message.includes("already bound")
+          error instanceof IdempotencyStateError &&
+          error.code === "IDEMPOTENCY_CONFLICT"
             ? "idempotency_conflict"
             : "unexpected_error",
         adapterCalls: setup.adapter.executeCalls,

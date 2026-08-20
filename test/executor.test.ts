@@ -228,6 +228,40 @@ test("partial failure uses pre-authorized compensation", async () => {
   assert.equal(await readFile(state.adapter.retryPath, "utf8"), "");
 });
 
+test("an effectful failed receipt is replayed without a second effect", async () => {
+  const action = request("after_effect");
+  const state = await setup(action);
+  state.adapter.compensate = async () => ({
+    passed: false,
+    detail: "Forced compensation failure.",
+  });
+  await new OperatorApprovalProvider(state.approvals, clock).issue(action, state.decision, "operator", true);
+  const dependencies = { ...state, policy, evidence, clock };
+
+  const first = await executeGovernedAction(action, state.decision, dependencies);
+  const replay = await executeGovernedAction(action, state.decision, dependencies);
+
+  assert.equal(first.result, "failed");
+  assert.equal(first.effects.length, 1);
+  assert.equal(replay.id, first.id);
+  assert.equal(state.adapter.executeCalls, 1);
+});
+
+test("a no-effect refusal releases the same action for an approved retry", async () => {
+  const action = request();
+  const state = await setup(action);
+  const dependencies = { ...state, policy, evidence, clock };
+
+  const refused = await executeGovernedAction(action, state.decision, dependencies);
+  assert.equal(refused.result, "refused");
+  assert.equal(refused.effects.length, 0);
+
+  await new OperatorApprovalProvider(state.approvals, clock).issue(action, state.decision, "operator", true);
+  const retried = await executeGovernedAction(action, state.decision, dependencies);
+  assert.equal(retried.result, "succeeded");
+  assert.equal(state.adapter.executeCalls, 1);
+});
+
 test("verification failure uses pre-authorized compensation", async () => {
   const action = request();
   const state = await setup(action);

@@ -23,12 +23,17 @@ export type ExecutorDependencies = {
   clock?: Clock;
 };
 
-export class IdempotencyConflictError extends Error {
-  readonly code = "IDEMPOTENCY_CONFLICT";
-
-  constructor(idempotencyKey: string) {
-    super(`Idempotency key "${idempotencyKey}" is already bound to another action.`);
-    this.name = "IdempotencyConflictError";
+export class IdempotencyStateError extends Error {
+  constructor(
+    readonly code: "IDEMPOTENCY_CONFLICT" | "IDEMPOTENCY_IN_PROGRESS",
+    idempotencyKey: string,
+  ) {
+    super(
+      code === "IDEMPOTENCY_CONFLICT"
+        ? `Idempotency key "${idempotencyKey}" is already bound to another action.`
+        : `Idempotency key "${idempotencyKey}" is already executing.`,
+    );
+    this.name = "IdempotencyStateError";
   }
 }
 
@@ -37,13 +42,20 @@ export async function executeGovernedAction(
   decision: PolicyDecision,
   dependencies: ExecutorDependencies,
 ): Promise<ExecutionReceipt> {
-  const existing = await dependencies.receipts.findSuccessful(request.idempotencyKey);
-  if (existing) {
-    if (existing.actionDigest !== actionDigest(request)) {
-      throw new IdempotencyConflictError(request.idempotencyKey);
-    }
-    return existing;
+  const requestActionDigest = actionDigest(request);
+  const claim = await dependencies.receipts.claim(
+    request.idempotencyKey,
+    requestActionDigest,
+  );
+  if (claim.status === "replay") return claim.receipt;
+  if (claim.status === "conflict") {
+    throw new IdempotencyStateError("IDEMPOTENCY_CONFLICT", request.idempotencyKey);
   }
+  if (claim.status === "in_progress") {
+    throw new IdempotencyStateError("IDEMPOTENCY_IN_PROGRESS", request.idempotencyKey);
+  }
+
+  const executeClaimed = async (): Promise<ExecutionReceipt> => {
   const clock = dependencies.clock ?? systemClock;
   const startedAt = clock.now().toISOString();
   const current = await dependencies.loadCurrentState();
@@ -59,7 +71,7 @@ export async function executeGovernedAction(
   const staleEvidence = evidenceAge > dependencies.policy.maxEvidenceAgeSeconds * 1000;
   const decisionChanged =
     digestOmitting(decision, "decisionDigest") !== decision.decisionDigest ||
-    decision.actionDigest !== actionDigest(request) ||
+    decision.actionDigest !== requestActionDigest ||
     decision.decisionDigest !== currentDecision.decisionDigest ||
     decision.policy.id !== dependencies.policy.id ||
     decision.policy.version !== dependencies.policy.version;
@@ -195,5 +207,16 @@ export async function executeGovernedAction(
         result: execution ? "not_authorized" : "not_needed",
       },
     });
+  }
+  };
+
+  try {
+    return await executeClaimed();
+  } catch (error) {
+    await dependencies.receipts.release(
+      request.idempotencyKey,
+      requestActionDigest,
+    );
+    throw error;
   }
 }

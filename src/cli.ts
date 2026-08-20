@@ -14,7 +14,7 @@ import {
   type PolicyManifest,
 } from "./contracts.js";
 import { proposeActionFromDiagnostic, recheckProposal } from "./context-adapter.js";
-import { executeGovernedAction } from "./executor.js";
+import { executeGovernedAction, IdempotencyStateError } from "./executor.js";
 import { evaluateAction, systemClock } from "./policy.js";
 import { prepareActionReview, renderActionReviewBrief } from "./operator-review.js";
 import { verifyReceipt } from "./receipts.js";
@@ -138,19 +138,28 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
     const diagnostic = await json(required(args, "diagnostic"));
     const adapted = recheckProposal(diagnostic, request);
     const policy = await loadPolicy(args);
-    const receipt = await executeGovernedAction(request, decision, {
-      policy,
-      evidence: adapted.evidence,
-      loadCurrentState: async () => ({
+    let receipt: Awaited<ReturnType<typeof executeGovernedAction>>;
+    try {
+      receipt = await executeGovernedAction(request, decision, {
+        policy,
         evidence: adapted.evidence,
-        currentTargetHash: adapted.targetHash,
-        diagnosticAsOf: adapted.diagnostic.scenario.asOf,
-      }),
-      adapter: new SyntheticAutomationAdapter(resolve(required(args, "sandbox"))),
-      approvals: new FileApprovalStore(required(args, "approval-store")),
-      receipts: new FileReceiptStore(required(args, "receipt-store")),
-      clock: systemClock,
-    });
+        loadCurrentState: async () => ({
+          evidence: adapted.evidence,
+          currentTargetHash: adapted.targetHash,
+          diagnosticAsOf: adapted.diagnostic.scenario.asOf,
+        }),
+        adapter: new SyntheticAutomationAdapter(resolve(required(args, "sandbox"))),
+        approvals: new FileApprovalStore(required(args, "approval-store")),
+        receipts: new FileReceiptStore(required(args, "receipt-store")),
+        clock: systemClock,
+      });
+    } catch (error) {
+      if (error instanceof IdempotencyStateError) {
+        await output({ code: error.code, message: error.message }, args);
+        return 2;
+      }
+      throw error;
+    }
     await output(receipt, args);
     return receipt.result === "succeeded" || receipt.result === "compensated" ? 0 : 2;
   }

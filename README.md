@@ -215,6 +215,11 @@ Strict Zod schemas reject unknown keys at persisted and transport boundaries:
 Canonical JSON recursively sorts keys and rejects non-JSON values before
 SHA-256 hashing. An approval binds both the complete request digest and the
 decision digest. Receipts describe bounded resources and before/after hashes.
+Before execution, each idempotency key is atomically and permanently bound to
+the complete action digest. A concurrent duplicate reports in-progress, a
+different action reports a conflict, and any receipt with effects is replayed
+rather than executed again. A same-action refusal with no effects may be
+retried after its missing precondition is supplied.
 
 Receipts are append-only in this implementation, not tamper-proof audit logs.
 Digest verification detects changed content; it does not defend against a
@@ -243,8 +248,9 @@ structured output with explicit expected output. Coverage includes:
 - changed, expired, replayed, tampered, and earlier-decision approvals;
 - evidence expiry, missing evidence, invalid quality, contradictory
   assessments, and newer success before retry;
-- idempotency, failures before and after effect, compensation, verification
-  mismatch, and tampered receipts;
+- exact replay, concurrent and cross-action idempotency conflicts, failures
+  before and after effect, compensation, verification mismatch, and tampered
+  receipts;
 - absent approval providers, MCP capability limits, forged browser decisions,
   generated-demo drift, policy change after approval, review-only preparation,
   and review-packet tampering.

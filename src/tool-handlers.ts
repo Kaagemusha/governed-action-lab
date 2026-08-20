@@ -2,7 +2,7 @@ import type { ApprovalStore } from "./approval.js";
 import type { ActionAdapter } from "./adapters/synthetic-automation.js";
 import { actionRequestSchema, policyDecisionSchema, type ActionRequest, type ExecutionReceipt, type PolicyDecision, type PolicyManifest } from "./contracts.js";
 import { recheckProposal } from "./context-adapter.js";
-import { executeGovernedAction, IdempotencyConflictError } from "./executor.js";
+import { executeGovernedAction, IdempotencyStateError } from "./executor.js";
 import { evaluateAction, type Clock } from "./policy.js";
 import { verifyReceipt } from "./receipts.js";
 import type { ReceiptStore } from "./store.js";
@@ -88,7 +88,7 @@ export async function handleExecuteApprovedAction(
       clock: dependencies.clock,
     });
   } catch (error) {
-    if (error instanceof IdempotencyConflictError) {
+    if (error instanceof IdempotencyStateError) {
       return { ok: false, result: { code: error.code, message: error.message } };
     }
     throw error;
