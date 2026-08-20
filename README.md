@@ -106,6 +106,25 @@ adapter version as `browser-synthetic/1`. They remain browser-only simulations;
 no private diagnostic, receipt, lane identifier, path, hostname, or operating
 record is published in this repository.
 
+The repository also publishes one frozen, portable green proof packet at
+[`docs/governed-action-proof.json`](docs/governed-action-proof.json). It embeds
+the exact Context Layer v2 fixture, public policy 1.2.0, recomputed READY review,
+and a successful approval-free receipt generated through the actual synthetic
+executor's read path. Generate or verify byte-for-byte drift with:
+
+```bash
+npm run proof:sync
+npm run proof:check
+```
+
+`verifyPortableProof` validates strict schemas, frozen producer metadata,
+canonical diagnostic and policy hashes, recomputed request/decision/review
+semantics, read-only receipt invariants, nested digests, and the outer packet
+digest. These digests demonstrate integrity and binding inside this artifact;
+they are not signatures, authenticity claims, external audit anchors, or proof
+that an external system was inspected. The packet contains no approval grant,
+yellow execution, private path, hostname, or operating record.
+
 The lower-level lifecycle remains available for inspecting each boundary:
 
 ```bash
@@ -254,7 +273,7 @@ identifier, not an approval payload or command string.
 
 ## Evaluations
 
-`npm run eval` executes 34 deterministic adversarial cases and compares actual
+`npm run eval` executes 35 deterministic adversarial cases and compares actual
 structured output with explicit expected output. Coverage includes:
 
 - unknown action, adapter, environment, diagnostic, and command-shaped input;

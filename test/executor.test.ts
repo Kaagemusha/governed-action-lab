@@ -285,3 +285,34 @@ test("verification failure uses pre-authorized compensation", async () => {
   assert.equal(receipt.compensation.result, "succeeded");
   assert.equal(await readFile(state.adapter.retryPath, "utf8"), "");
 });
+
+test("executor accepts a deterministic receipt ID factory without changing the random default", async () => {
+  const base = request();
+  const action: ActionRequest = {
+    ...base,
+    id: "request-green-id",
+    idempotencyKey: "green-id-factory",
+    action: { type: "inspect_run_receipt", laneId: "site-refresh", recordId: "site-refresh-receipt" },
+    target: { adapterId: "governed-automation", resourceId: "site-refresh", environment: "read_only" },
+  };
+  const state = await setup(action);
+  const receipt = await executeGovernedAction(action, state.decision, {
+    ...state,
+    policy,
+    evidence,
+    clock,
+    receiptIdFactory: () => "receipt-injected-for-test",
+  });
+  assert.equal(receipt.id, "receipt-injected-for-test");
+  assert.equal(receipt.result, "succeeded");
+
+  const defaultAction = { ...action, idempotencyKey: "green-default-id" };
+  const defaultState = await setup(defaultAction);
+  const defaultReceipt = await executeGovernedAction(defaultAction, defaultState.decision, {
+    ...defaultState,
+    policy,
+    evidence,
+    clock,
+  });
+  assert.match(defaultReceipt.id, /^receipt-[0-9a-f-]{36}$/);
+});

@@ -84,10 +84,59 @@ function scan(label, path, content, patterns, findings) {
   }
 }
 
+function sameKeys(value, expected) {
+  return value && typeof value === "object" && !Array.isArray(value) &&
+    Object.keys(value).sort().join("\0") === [...expected].sort().join("\0");
+}
+
+function validatePortableProof(content, findings) {
+  let packet;
+  try {
+    packet = JSON.parse(content);
+  } catch {
+    findings.add("docs/governed-action-proof.json: portable proof is not valid JSON");
+    return;
+  }
+  const fail = (condition, message) => {
+    if (!condition) findings.add(`docs/governed-action-proof.json: ${message}`);
+  };
+  fail(sameKeys(packet, ["schemaVersion", "mode", "synthetic", "diagnosticSource", "diagnostic", "policy", "review", "approvalBoundary", "receipt", "packetDigest"]), "portable proof has an unexpected top-level shape");
+  fail(packet.schemaVersion === "governed-action-proof/v1", "unexpected proof schema");
+  fail(packet.mode === "synthetic_green_inspection" && packet.synthetic === true, "proof is not explicitly synthetic green inspection");
+  fail(sameKeys(packet.diagnosticSource, ["producer", "producerCommit", "producerArtifact", "format", "fixtureSha256", "diagnosticCanonicalSha256"]), "diagnostic source has an unexpected shape");
+  fail(packet.diagnosticSource?.producer === "Kaagemusha/context-layer-lab", "unexpected diagnostic producer");
+  fail(packet.diagnosticSource?.producerCommit === "5d74a5c5a0d1269a916612bcc69db60003ea69b8", "diagnostic commit is not frozen");
+  fail(packet.diagnosticSource?.producerArtifact === "docs/operational-health.json", "unexpected producer artifact");
+  fail(packet.diagnosticSource?.format === "context-layer-diagnostic/v2", "proof source is not diagnostic v2");
+  fail(packet.diagnosticSource?.fixtureSha256 === "2398c03fe8d80c941dc66827be0a4a7015f799d63cda06dbdc84778934273064", "fixture byte digest is not frozen");
+  fail(packet.diagnosticSource?.diagnosticCanonicalSha256 === "3856460b1b54ff9dcfe7b86e442dac7ca1dc021c9d835f486f609950efab69c5", "fixture canonical digest is not frozen");
+  fail(packet.diagnostic?.format === "context-layer-diagnostic/v2", "embedded diagnostic is not v2");
+  fail(packet.diagnostic?.scenario?.asOf === "2026-07-28T09:10:00Z", "diagnostic time is not frozen");
+  fail(packet.policy?.schemaVersion === "governed-action-policy/v1" && packet.policy?.id === "governed-action-lab-public-policy" && packet.policy?.version === "1.2.0", "proof does not embed public policy 1.2.0");
+  fail(packet.review?.schemaVersion === "governed-action-review/v2" && packet.review?.status === "READY", "proof review is not READY v2");
+  fail(packet.review?.request?.action?.type === "inspect_run_receipt" && packet.review?.request?.action?.laneId === "site-refresh", "proof action is not the bounded green inspection");
+  fail(packet.review?.request?.target?.environment === "read_only", "proof target is not read-only");
+  fail(packet.review?.request?.proposedAt === "2026-07-28T09:10:00.000Z" && packet.review?.decision?.decisionAt === "2026-07-28T09:10:00.000Z", "review times are not frozen");
+  fail(sameKeys(packet.approvalBoundary, ["required", "grant"]) && packet.approvalBoundary.required === false && packet.approvalBoundary.grant === null, "proof carries an approval boundary");
+  fail(packet.receipt?.schemaVersion === "governed-action-receipt/v1" && packet.receipt?.result === "succeeded", "receipt is not a successful v1 receipt");
+  fail(packet.receipt?.approvalId === null, "receipt carries an approval");
+  fail(packet.receipt?.startedAt === "2026-07-28T09:10:00.000Z" && packet.receipt?.endedAt === "2026-07-28T09:10:00.000Z", "receipt times are not frozen");
+  fail(packet.receipt?.effects?.length === 1 && packet.receipt.effects[0]?.kind === "read" && packet.receipt.effects[0]?.beforeHash === packet.receipt.effects[0]?.afterHash, "receipt is not a single read-only effect");
+  for (const match of content.matchAll(/https?:\/\/[^\s"'<>),\x60]+/g)) {
+    const url = match[0].replace(/[.,;:]$/, "");
+    if (!allowedFixtureUrls.some((prefix) => url.startsWith(prefix))) {
+      findings.add("docs/governed-action-proof.json: proof URL is outside the allowlist: " + url);
+    }
+  }
+}
+
 async function scanTree(patterns, findings) {
-  const files = (await git(["ls-files", "-z"])).split("\0").filter(Boolean);
+  const files = (await git(["ls-files", "--cached", "--others", "--exclude-standard", "-z"]))
+    .split("\0").filter(Boolean);
   for (const path of files) {
-    scan(path, path, await readFile(path, "utf8").catch(() => ""), patterns, findings);
+    const content = await readFile(path, "utf8").catch(() => "");
+    scan(path, path, content, patterns, findings);
+    if (path === "docs/governed-action-proof.json") validatePortableProof(content, findings);
   }
   return files.length;
 }

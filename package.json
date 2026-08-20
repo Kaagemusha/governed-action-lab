@@ -20,10 +20,12 @@
     "fixture:fresh": "npm run build --silent && node scripts/freshen-public-fixture.mjs",
     "demo:sync": "npm run build --silent && node scripts/build-browser-runtime.mjs && node scripts/sync-demo.mjs",
     "demo:check": "npm run build --silent && node scripts/build-browser-runtime.mjs --check && node scripts/sync-demo.mjs --check",
+    "proof:sync": "npm run build --silent && node scripts/build-portable-proof.mjs",
+    "proof:check": "npm run build --silent && node scripts/build-portable-proof.mjs --check",
     "qa:responsive": "node scripts/check-responsive.mjs",
     "public-safety:check": "node scripts/check-public-safety.mjs",
     "public-safety:install": "git config core.hooksPath .githooks",
-    "check": "npm run public-safety:check && npm run contract:check && npm run typecheck && npm test && npm run eval && npm run demo:check && npm run qa:responsive",
+    "check": "npm run public-safety:check && npm run contract:check && npm run typecheck && npm test && npm run eval && npm run demo:check && npm run proof:check && npm run qa:responsive",
     "action": "npm run build --silent && node dist/src/cli.js"
   },
   "dependencies": {

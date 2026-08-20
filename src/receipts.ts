@@ -21,10 +21,10 @@ export function createReceipt(input: {
   verification?: { passed: boolean; detail: string };
   compensation?: ExecutionReceipt["compensation"];
   previousReceiptId?: string | null;
-}): ExecutionReceipt {
+}, receiptIdFactory: () => string = () => `receipt-${globalThis.crypto.randomUUID()}`): ExecutionReceipt {
   const partial = {
     schemaVersion: RECEIPT_VERSION,
-    id: `receipt-${globalThis.crypto.randomUUID()}`,
+    id: receiptIdFactory(),
     requestId: input.request.id,
     actionDigest: input.decision.actionDigest,
     decisionDigest: input.decision.decisionDigest,

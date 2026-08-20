@@ -1,0 +1,470 @@
+{
+  "schemaVersion": "governed-action-proof/v1",
+  "mode": "synthetic_green_inspection",
+  "synthetic": true,
+  "diagnosticSource": {
+    "producer": "Kaagemusha/context-layer-lab",
+    "producerCommit": "5d74a5c5a0d1269a916612bcc69db60003ea69b8",
+    "producerArtifact": "docs/operational-health.json",
+    "format": "context-layer-diagnostic/v2",
+    "fixtureSha256": "2398c03fe8d80c941dc66827be0a4a7015f799d63cda06dbdc84778934273064",
+    "diagnosticCanonicalSha256": "3856460b1b54ff9dcfe7b86e442dac7ca1dc021c9d835f486f609950efab69c5"
+  },
+  "diagnostic": {
+    "format": "context-layer-diagnostic/v2",
+    "scenario": {
+      "question": "Are all scheduled automations healthy?",
+      "asOf": "2026-07-28T09:10:00Z",
+      "lanes": [
+        {
+          "id": "morning-brief",
+          "label": "Morning Brief",
+          "dueAt": "2026-07-28T07:55:00Z"
+        },
+        {
+          "id": "site-refresh",
+          "label": "Site Refresh",
+          "dueAt": "2026-07-28T08:15:00Z"
+        },
+        {
+          "id": "research-watch",
+          "label": "Research Watch",
+          "dueAt": "2026-07-28T08:30:00Z"
+        },
+        {
+          "id": "ai-radar",
+          "label": "AI Radar",
+          "dueAt": "2026-07-28T17:30:00Z"
+        }
+      ],
+      "summary": {
+        "recordId": "fleet-health-rollup",
+        "observedAt": "2026-07-28T07:30:00Z",
+        "verdict": "healthy"
+      },
+      "receipts": [
+        {
+          "recordId": "morning-brief-receipt",
+          "laneId": "morning-brief",
+          "observedAt": "2026-07-28T08:02:00Z",
+          "outcome": "success"
+        },
+        {
+          "recordId": "site-refresh-receipt",
+          "laneId": "site-refresh",
+          "observedAt": "2026-07-28T08:40:00Z",
+          "outcome": "failed"
+        },
+        {
+          "recordId": "research-watch-receipt",
+          "laneId": "research-watch",
+          "observedAt": "2026-07-28T09:05:00Z",
+          "outcome": "preserved_local"
+        }
+      ]
+    },
+    "assessment": {
+      "question": "Are all scheduled automations healthy?",
+      "asOf": "2026-07-28T09:10:00Z",
+      "naiveVerdict": "healthy",
+      "governedVerdict": "attention",
+      "summaryStale": true,
+      "decisionPrevented": true,
+      "newerEvidenceRecordIds": [
+        "morning-brief-receipt",
+        "site-refresh-receipt",
+        "research-watch-receipt"
+      ],
+      "laneAssessments": [
+        {
+          "id": "morning-brief",
+          "label": "Morning Brief",
+          "state": "healthy",
+          "outcome": "success",
+          "evidenceRecordId": "morning-brief-receipt"
+        },
+        {
+          "id": "site-refresh",
+          "label": "Site Refresh",
+          "state": "attention",
+          "outcome": "failed",
+          "evidenceRecordId": "site-refresh-receipt"
+        },
+        {
+          "id": "research-watch",
+          "label": "Research Watch",
+          "state": "attention",
+          "outcome": "preserved_local",
+          "evidenceRecordId": "research-watch-receipt"
+        },
+        {
+          "id": "ai-radar",
+          "label": "AI Radar",
+          "state": "not_due",
+          "outcome": null,
+          "evidenceRecordId": null
+        }
+      ],
+      "evidenceQuality": {
+        "fleet-health-rollup": {
+          "state": "degraded",
+          "issues": [
+            {
+              "code": "stale_record",
+              "severity": "warning",
+              "message": "The record expired at 2026-07-28T07:55:00Z.",
+              "path": "validUntil"
+            }
+          ]
+        },
+        "morning-brief-receipt": {
+          "state": "valid",
+          "issues": []
+        },
+        "site-refresh-receipt": {
+          "state": "valid",
+          "issues": []
+        },
+        "research-watch-receipt": {
+          "state": "valid",
+          "issues": []
+        }
+      }
+    },
+    "records": [
+      {
+        "id": "fleet-health-rollup",
+        "title": "Fleet Health Rollup",
+        "summary": "A morning dashboard snapshot reports every scheduled lane healthy.",
+        "content": "The dashboard was accurate when generated. Its freshness window ends when the first morning lane becomes due.",
+        "tags": [
+          "automation-health",
+          "summary",
+          "dashboard"
+        ],
+        "owner": "Reliability Operations",
+        "updatedAt": "2026-07-28T07:30:00Z",
+        "validUntil": "2026-07-28T07:55:00Z",
+        "sources": [
+          {
+            "id": "dashboard-snapshot-0730",
+            "label": "Dashboard snapshot at 07:30",
+            "url": "https://example.invalid/operations/dashboard-0730",
+            "observedAt": "2026-07-28T07:30:00Z"
+          }
+        ],
+        "claims": [
+          {
+            "text": "All scheduled automation lanes are healthy.",
+            "sourceIds": [
+              "dashboard-snapshot-0730"
+            ],
+            "operational": {
+              "kind": "summary",
+              "observedAt": "2026-07-28T07:30:00Z",
+              "verdict": "healthy",
+              "lanes": [
+                {
+                  "id": "morning-brief",
+                  "label": "Morning Brief",
+                  "dueAt": "2026-07-28T07:55:00Z"
+                },
+                {
+                  "id": "site-refresh",
+                  "label": "Site Refresh",
+                  "dueAt": "2026-07-28T08:15:00Z"
+                },
+                {
+                  "id": "research-watch",
+                  "label": "Research Watch",
+                  "dueAt": "2026-07-28T08:30:00Z"
+                },
+                {
+                  "id": "ai-radar",
+                  "label": "AI Radar",
+                  "dueAt": "2026-07-28T17:30:00Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "morning-brief-receipt",
+        "title": "Morning Brief Run Receipt",
+        "summary": "The scheduled morning brief completed and delivered successfully.",
+        "content": "The terminal receipt records successful generation and delivery after the lane's scheduled window opened.",
+        "tags": [
+          "automation-health",
+          "run-receipt",
+          "morning-brief"
+        ],
+        "owner": "Messaging Operations",
+        "updatedAt": "2026-07-28T08:02:00Z",
+        "validUntil": "2026-07-29T08:02:00Z",
+        "sources": [
+          {
+            "id": "morning-run-0802",
+            "label": "Morning Brief terminal receipt",
+            "url": "https://example.invalid/operations/morning-run-0802",
+            "observedAt": "2026-07-28T08:02:00Z"
+          }
+        ],
+        "claims": [
+          {
+            "text": "The Morning Brief run completed successfully.",
+            "sourceIds": [
+              "morning-run-0802"
+            ],
+            "operational": {
+              "kind": "receipt",
+              "laneId": "morning-brief",
+              "observedAt": "2026-07-28T08:02:00Z",
+              "outcome": "success"
+            }
+          }
+        ]
+      },
+      {
+        "id": "research-watch-receipt",
+        "title": "Research Watch Run Receipt",
+        "summary": "The research run completed, but its output remains preserved locally rather than integrated.",
+        "content": "Work exists, but the terminal state is not equivalent to successful publication. The lane needs attention without discarding its output.",
+        "tags": [
+          "automation-health",
+          "run-receipt",
+          "research-watch"
+        ],
+        "owner": "Research Operations",
+        "updatedAt": "2026-07-28T09:05:00Z",
+        "validUntil": "2026-07-29T09:05:00Z",
+        "sources": [
+          {
+            "id": "research-run-0905",
+            "label": "Research Watch terminal receipt",
+            "url": "https://example.invalid/operations/research-run-0905",
+            "observedAt": "2026-07-28T09:05:00Z"
+          }
+        ],
+        "claims": [
+          {
+            "text": "The Research Watch output is preserved locally and is not integrated.",
+            "sourceIds": [
+              "research-run-0905"
+            ],
+            "operational": {
+              "kind": "receipt",
+              "laneId": "research-watch",
+              "observedAt": "2026-07-28T09:05:00Z",
+              "outcome": "preserved_local"
+            }
+          }
+        ]
+      },
+      {
+        "id": "site-refresh-receipt",
+        "title": "Site Refresh Run Receipt",
+        "summary": "The scheduled refresh stopped before deployment because its source checkout was dirty.",
+        "content": "The prior public version remains unchanged. The failed run is newer and more specific than the earlier fleet summary.",
+        "tags": [
+          "automation-health",
+          "run-receipt",
+          "site-refresh"
+        ],
+        "owner": "Web Operations",
+        "updatedAt": "2026-07-28T08:40:00Z",
+        "validUntil": "2026-07-29T08:40:00Z",
+        "sources": [
+          {
+            "id": "site-run-0840",
+            "label": "Site Refresh terminal receipt",
+            "url": "https://example.invalid/operations/site-run-0840",
+            "observedAt": "2026-07-28T08:40:00Z"
+          }
+        ],
+        "claims": [
+          {
+            "text": "The Site Refresh run failed before deployment.",
+            "sourceIds": [
+              "site-run-0840"
+            ],
+            "operational": {
+              "kind": "receipt",
+              "laneId": "site-refresh",
+              "observedAt": "2026-07-28T08:40:00Z",
+              "outcome": "failed"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "policy": {
+    "schemaVersion": "governed-action-policy/v1",
+    "id": "governed-action-lab-public-policy",
+    "version": "1.2.0",
+    "diagnosticFormat": "context-layer-diagnostic/v1",
+    "acceptedDiagnosticFormats": [
+      "context-layer-diagnostic/v1",
+      "context-layer-diagnostic/v2"
+    ],
+    "maxEvidenceAgeSeconds": 86400,
+    "rules": [
+      {
+        "id": "rule.inspect.read-only",
+        "actionType": "inspect_run_receipt",
+        "adapterId": "governed-automation",
+        "classification": "green",
+        "allowedEnvironment": "read_only",
+        "approvalRequired": false,
+        "maxApprovalLifetimeSeconds": null,
+        "requiredEvidenceOutcome": null,
+        "reversible": false,
+        "verificationRequired": true
+      },
+      {
+        "id": "rule.retry.reversible-sandbox",
+        "actionType": "retry_failed_lane",
+        "adapterId": "governed-automation",
+        "classification": "yellow",
+        "allowedEnvironment": "synthetic_sandbox",
+        "approvalRequired": true,
+        "maxApprovalLifetimeSeconds": 300,
+        "requiredEvidenceOutcome": "failed",
+        "reversible": true,
+        "verificationRequired": true
+      },
+      {
+        "id": "rule.delete.refuse",
+        "actionType": "delete_preserved_output",
+        "adapterId": null,
+        "classification": "red",
+        "allowedEnvironment": null,
+        "approvalRequired": false,
+        "maxApprovalLifetimeSeconds": null,
+        "requiredEvidenceOutcome": "preserved_local",
+        "reversible": false,
+        "verificationRequired": false
+      }
+    ]
+  },
+  "review": {
+    "schemaVersion": "governed-action-review/v2",
+    "diagnostic": {
+      "format": "context-layer-diagnostic/v2",
+      "digest": "3856460b1b54ff9dcfe7b86e442dac7ca1dc021c9d835f486f609950efab69c5",
+      "asOf": "2026-07-28T09:10:00Z"
+    },
+    "id": "review-ee2f794a7edb04d8",
+    "request": {
+      "schemaVersion": "governed-action-request/v1",
+      "id": "request-55829d90d51c1359",
+      "idempotencyKey": "action-55829d90d51c1359",
+      "proposedAt": "2026-07-28T09:10:00.000Z",
+      "proposer": {
+        "kind": "agent",
+        "id": "portable-proof-generator"
+      },
+      "intent": "Inspect the latest run receipt.",
+      "action": {
+        "type": "inspect_run_receipt",
+        "laneId": "site-refresh",
+        "recordId": "site-refresh-receipt"
+      },
+      "target": {
+        "adapterId": "governed-automation",
+        "resourceId": "site-refresh",
+        "environment": "read_only"
+      },
+      "evidence": {
+        "diagnosticFormat": "context-layer-diagnostic/v2",
+        "diagnosticHash": "3856460b1b54ff9dcfe7b86e442dac7ca1dc021c9d835f486f609950efab69c5",
+        "recordIds": [
+          "site-refresh-receipt"
+        ],
+        "asOf": "2026-07-28T09:10:00Z"
+      },
+      "expectedState": {
+        "contentHash": "e645dbb2676c8403f65c2577d646db49098374b7626256647fe6a4cac0fa8959"
+      }
+    },
+    "decision": {
+      "schemaVersion": "governed-action-decision/v1",
+      "id": "decision-655c01b8e1661a14",
+      "requestId": "request-55829d90d51c1359",
+      "actionDigest": "655c01b8e1661a148d8cc2c9b0ff5cabd3b91179e0b8a893f7fb451f91504866",
+      "policy": {
+        "id": "governed-action-lab-public-policy",
+        "version": "1.2.0"
+      },
+      "classification": "green",
+      "disposition": "allow",
+      "reasonCodes": [
+        "ACTION_ALLOWED"
+      ],
+      "reasons": [
+        {
+          "code": "ACTION_ALLOWED",
+          "message": "The catalog action is read-only and may execute automatically.",
+          "evidenceRecordIds": [
+            "site-refresh-receipt"
+          ],
+          "policyRuleId": "rule.inspect.read-only"
+        }
+      ],
+      "requirements": [],
+      "decisionAt": "2026-07-28T09:10:00.000Z",
+      "decisionDigest": "df517a9124e1fe9f372e2c7df03240dd52a29ca6f0dc7ef9509b4e72a655fc41"
+    },
+    "plan": {
+      "effect": "Read receipt site-refresh-receipt.",
+      "reversible": false
+    },
+    "status": "READY",
+    "reviewDigest": "22ca70fd31115550b27907a425ea5b21a2738356a3563542ebb76b703c733777"
+  },
+  "approvalBoundary": {
+    "required": false,
+    "grant": null
+  },
+  "receipt": {
+    "schemaVersion": "governed-action-receipt/v1",
+    "id": "receipt-portable-green-v2",
+    "requestId": "request-55829d90d51c1359",
+    "actionDigest": "655c01b8e1661a148d8cc2c9b0ff5cabd3b91179e0b8a893f7fb451f91504866",
+    "decisionDigest": "df517a9124e1fe9f372e2c7df03240dd52a29ca6f0dc7ef9509b4e72a655fc41",
+    "approvalId": null,
+    "adapter": {
+      "id": "governed-automation",
+      "version": "1.0.0"
+    },
+    "startedAt": "2026-07-28T09:10:00.000Z",
+    "endedAt": "2026-07-28T09:10:00.000Z",
+    "result": "succeeded",
+    "preconditionCheck": {
+      "passed": true,
+      "detail": "Read-only request and evidence remain current."
+    },
+    "effects": [
+      {
+        "kind": "read",
+        "resourceId": "site-refresh",
+        "beforeHash": "e645dbb2676c8403f65c2577d646db49098374b7626256647fe6a4cac0fa8959",
+        "afterHash": "e645dbb2676c8403f65c2577d646db49098374b7626256647fe6a4cac0fa8959"
+      }
+    ],
+    "verification": {
+      "passed": true,
+      "detail": "Read effect did not mutate state."
+    },
+    "compensation": {
+      "supported": false,
+      "authorized": false,
+      "attempted": false,
+      "result": "not_needed"
+    },
+    "previousReceiptId": null,
+    "receiptDigest": "a94f8e127e07c00b34bde44766596fbf65d3e3ab834244276139ae78f7312144"
+  },
+  "packetDigest": "b42943342027c10b7a45d8dee080a07feb7350f7529c33b21ae75ab5d15c432d"
+}

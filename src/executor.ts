@@ -21,6 +21,7 @@ export type ExecutorDependencies = {
   approvals: ApprovalStore | null;
   receipts: ReceiptStore;
   clock?: Clock;
+  receiptIdFactory?: () => string;
 };
 
 export class IdempotencyStateError extends Error {
@@ -92,7 +93,7 @@ export async function executeGovernedAction(
       result,
       precondition: { passed: result === "succeeded", detail },
       ...options,
-    });
+    }, dependencies.receiptIdFactory);
     await dependencies.receipts.append(receipt, request.idempotencyKey);
     return receipt;
   };

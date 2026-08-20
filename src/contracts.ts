@@ -9,6 +9,7 @@ export const DIAGNOSTIC_VERSION = "context-layer-diagnostic/v1";
 export const DIAGNOSTIC_V2_VERSION = "context-layer-diagnostic/v2";
 export const REVIEW_VERSION = "governed-action-review/v1";
 export const REVIEW_V2_VERSION = "governed-action-review/v2";
+export const PROOF_VERSION = "governed-action-proof/v1";
 
 const id = z.string().min(1);
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
@@ -153,7 +154,7 @@ const actionReviewV1Schema = z
     ...actionReviewShape,
   })
   .strict();
-const actionReviewV2Schema = z
+export const actionReviewV2Schema = z
   .object({
     schemaVersion: z.literal(REVIEW_V2_VERSION),
     diagnostic: z
@@ -436,7 +437,7 @@ export const diagnosticSnapshotV1Schema = z
     records: z.array(contextRecordV1Schema),
   })
   .strict();
-const diagnosticSnapshotV2Schema = z
+export const diagnosticSnapshotV2Schema = z
   .object({
     format: z.literal(DIAGNOSTIC_V2_VERSION),
     scenario: scenarioSchema,
@@ -569,6 +570,32 @@ export const diagnosticSnapshotSchema = z
     });
   });
 
+export const proofPacketSchema = z
+  .object({
+    schemaVersion: z.literal(PROOF_VERSION),
+    mode: z.literal("synthetic_green_inspection"),
+    synthetic: z.literal(true),
+    diagnosticSource: z
+      .object({
+        producer: id,
+        producerCommit: z.string().regex(/^[a-f0-9]{40}$/),
+        producerArtifact: id,
+        format: z.literal(DIAGNOSTIC_V2_VERSION),
+        fixtureSha256: digest,
+        diagnosticCanonicalSha256: digest,
+      })
+      .strict(),
+    diagnostic: diagnosticSnapshotV2Schema,
+    policy: policyManifestSchema,
+    review: actionReviewV2Schema,
+    approvalBoundary: z
+      .object({ required: z.literal(false), grant: z.null() })
+      .strict(),
+    receipt: executionReceiptSchema,
+    packetDigest: digest,
+  })
+  .strict();
+
 export type CatalogAction = z.infer<typeof catalogActionSchema>;
 export type ActionRequest = z.infer<typeof actionRequestSchema>;
 export type PolicyDecision = z.infer<typeof policyDecisionSchema>;
@@ -578,3 +605,5 @@ export type PolicyManifest = z.infer<typeof policyManifestSchema>;
 export type DiagnosticSnapshot = z.infer<typeof diagnosticSnapshotSchema>;
 export type DiagnosticSnapshotV1 = z.infer<typeof diagnosticSnapshotV1Schema>;
 export type ActionReview = z.infer<typeof actionReviewSchema>;
+export type DiagnosticSnapshotV2 = z.infer<typeof diagnosticSnapshotV2Schema>;
+export type ProofPacket = z.infer<typeof proofPacketSchema>;
