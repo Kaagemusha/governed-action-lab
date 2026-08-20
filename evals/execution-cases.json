@@ -6,5 +6,6 @@
   {"id":"24-fail-after-effect","expected":{"code":"compensated","restored":true}},
   {"id":"25-verification-mismatch","expected":{"code":"compensated","restored":true}},
   {"id":"26-tampered-receipt","expected":{"code":"invalid"}},
-  {"id":"31-policy-change","expected":{"code":"refused","effects":0}}
+  {"id":"31-policy-change","expected":{"code":"refused","effects":0}},
+  {"id":"35-idempotency-conflict","expected":{"code":"idempotency_conflict","adapterCalls":1,"receipts":1}}
 ]

@@ -10,7 +10,7 @@ import { SyntheticAutomationAdapter } from "../src/adapters/synthetic-automation
 import type { ActionRequest, PolicyManifest } from "../src/contracts.js";
 import { executeGovernedAction } from "../src/executor.js";
 import { evaluateAction } from "../src/policy.js";
-import { MemoryReceiptStore } from "../src/store.js";
+import { FileReceiptStore, MemoryReceiptStore, type ReceiptStore } from "../src/store.js";
 
 const policy = JSON.parse(await readFile("data/policy.json", "utf8")) as PolicyManifest;
 const targetHash = "a".repeat(64);
@@ -48,11 +48,10 @@ function request(failure: "none" | "before_effect" | "after_effect" = "none"): A
   };
 }
 
-async function setup(action = request()) {
+async function setup(action = request(), receipts: ReceiptStore = new MemoryReceiptStore()) {
   const directory = await mkdtemp(join(tmpdir(), "governed-executor-"));
   const adapter = new SyntheticAutomationAdapter(directory);
   const approvals = new MemoryApprovalStore();
-  const receipts = new MemoryReceiptStore();
   const decision = evaluateAction(action, policy, evidence, clock);
   const loadCurrentState = async () => ({
     evidence,
@@ -60,6 +59,62 @@ async function setup(action = request()) {
     diagnosticAsOf: "2026-07-28T09:10:00Z",
   });
   return { adapter, approvals, receipts, decision, loadCurrentState };
+}
+
+const receiptStoreFactories: Array<[string, () => Promise<ReceiptStore>]> = [
+  ["memory", async () => new MemoryReceiptStore()],
+  [
+    "file",
+    async () =>
+      new FileReceiptStore(
+        join(await mkdtemp(join(tmpdir(), "governed-receipts-")), "receipts.json"),
+      ),
+  ],
+];
+
+for (const [storeName, createStore] of receiptStoreFactories) {
+  for (const classification of ["green", "yellow", "red"] as const) {
+    test(`${storeName} idempotency rejects a different ${classification} action`, async () => {
+      const first = request();
+      if (first.action.type !== "retry_failed_lane") throw new Error("Expected retry action.");
+      const receipts = await createStore();
+      const state = await setup(first, receipts);
+      await new OperatorApprovalProvider(state.approvals, clock).issue(first, state.decision, "operator", true);
+      await executeGovernedAction(first, state.decision, { ...state, policy, evidence, clock });
+
+      const base: ActionRequest = {
+        ...first,
+        id: "request-collision",
+        intent: `A different ${classification} action using the same caller key`,
+      };
+      const collision: ActionRequest =
+        classification === "green"
+          ? {
+              ...base,
+              action: { type: "inspect_run_receipt", laneId: "site-refresh", recordId: "site-refresh-receipt" },
+              target: { adapterId: "governed-automation", resourceId: "site-refresh", environment: "read_only" },
+            }
+          : classification === "red"
+            ? {
+                ...base,
+                action: { type: "delete_preserved_output", laneId: "research-watch", recordId: "research-watch-receipt" },
+                target: { adapterId: "governed-automation", resourceId: "research-watch", environment: "synthetic_sandbox" },
+              }
+            : { ...base, action: { ...first.action, retryPayloadHash: "e".repeat(64) } };
+      const collisionDecision = evaluateAction(collision, policy, evidence, clock);
+      if (classification === "yellow") {
+        await new OperatorApprovalProvider(state.approvals, clock).issue(collision, collisionDecision, "operator", true);
+      }
+
+      await assert.rejects(
+        executeGovernedAction(collision, collisionDecision, { ...state, policy, evidence, clock }),
+        /already bound to another action/,
+      );
+      assert.equal(state.adapter.executeCalls, 1);
+      assert.equal(state.approvals.consumed.size, 1);
+      assert.equal((await receipts.list()).length, 1);
+    });
+  }
 }
 
 test("yellow executes once with exact approval and verifies effect", async () => {

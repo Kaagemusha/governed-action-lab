@@ -58,3 +58,27 @@ test("execute accepts an action identifier, not an approval payload", async () =
   assert.equal(result.ok, false);
   assert.equal((result.result as { code: string }).code, "ACTION_NOT_REGISTERED");
 });
+
+test("MCP execution reports an idempotency conflict without running another action", async () => {
+  const deps = await dependencies();
+  const first = proposeActionFromDiagnostic(fixture, {
+    actionType: "inspect_run_receipt",
+    laneId: "site-refresh",
+    idempotencyKey: "shared-caller-key",
+  });
+  handleEvaluateAction(deps, { request: first.request, diagnostic: fixture });
+  const executed = await handleExecuteApprovedAction(deps, { actionId: first.request.id });
+  assert.equal(executed.ok, true);
+
+  const collision = proposeActionFromDiagnostic(fixture, {
+    actionType: "retry_failed_lane",
+    laneId: "site-refresh",
+    idempotencyKey: "shared-caller-key",
+  });
+  handleEvaluateAction(deps, { request: collision.request, diagnostic: fixture });
+  const refused = await handleExecuteApprovedAction(deps, { actionId: collision.request.id });
+  assert.equal(refused.ok, false);
+  assert.equal((refused.result as { code: string }).code, "IDEMPOTENCY_CONFLICT");
+  assert.equal((deps.adapter as SyntheticAutomationAdapter).executeCalls, 0);
+  assert.equal((await deps.receipts.list()).length, 1);
+});

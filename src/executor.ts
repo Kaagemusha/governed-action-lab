@@ -23,13 +23,27 @@ export type ExecutorDependencies = {
   clock?: Clock;
 };
 
+export class IdempotencyConflictError extends Error {
+  readonly code = "IDEMPOTENCY_CONFLICT";
+
+  constructor(idempotencyKey: string) {
+    super(`Idempotency key "${idempotencyKey}" is already bound to another action.`);
+    this.name = "IdempotencyConflictError";
+  }
+}
+
 export async function executeGovernedAction(
   request: ActionRequest,
   decision: PolicyDecision,
   dependencies: ExecutorDependencies,
 ): Promise<ExecutionReceipt> {
   const existing = await dependencies.receipts.findSuccessful(request.idempotencyKey);
-  if (existing) return existing;
+  if (existing) {
+    if (existing.actionDigest !== actionDigest(request)) {
+      throw new IdempotencyConflictError(request.idempotencyKey);
+    }
+    return existing;
+  }
   const clock = dependencies.clock ?? systemClock;
   const startedAt = clock.now().toISOString();
   const current = await dependencies.loadCurrentState();

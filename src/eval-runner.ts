@@ -239,6 +239,43 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
     const second = await executeGovernedAction(setup.request, setup.decision, setup.dependencies);
     return { code: first.id === second.id ? "same_receipt" : "repeated", adapterCalls: setup.adapter.executeCalls };
   }
+  if (id === "35-idempotency-conflict") {
+    const setup = await approvedSetup();
+    if (setup.request.action.type !== "retry_failed_lane") throw new Error("Expected retry action.");
+    await executeGovernedAction(setup.request, setup.decision, setup.dependencies);
+    const collision: ActionRequest = {
+      ...setup.request,
+      id: "request-idempotency-collision",
+      intent: "Different action with a reused idempotency key",
+      action: {
+        ...setup.request.action,
+        retryPayloadHash: "e".repeat(64),
+      },
+    };
+    const collisionDecision = evaluateAction(
+      collision,
+      policy,
+      setup.evidence,
+      executionClock,
+    );
+    try {
+      await executeGovernedAction(collision, collisionDecision, setup.dependencies);
+      return {
+        code: "unexpected_success",
+        adapterCalls: setup.adapter.executeCalls,
+        receipts: (await setup.receipts.list()).length,
+      };
+    } catch (error) {
+      return {
+        code:
+          error instanceof Error && error.message.includes("already bound")
+            ? "idempotency_conflict"
+            : "unexpected_error",
+        adapterCalls: setup.adapter.executeCalls,
+        receipts: (await setup.receipts.list()).length,
+      };
+    }
+  }
   if (id === "23-fail-before-effect" || id === "24-fail-after-effect") {
     const proposal = retry();
     if (proposal.request.action.type !== "retry_failed_lane") throw new Error("Expected retry action.");
