@@ -1,5 +1,3 @@
-import { randomUUID } from "node:crypto";
-
 import { digestOmitting } from "./canonical.js";
 import {
   RECEIPT_VERSION,
@@ -26,7 +24,7 @@ export function createReceipt(input: {
 }): ExecutionReceipt {
   const partial = {
     schemaVersion: RECEIPT_VERSION,
-    id: `receipt-${randomUUID()}`,
+    id: `receipt-${globalThis.crypto.randomUUID()}`,
     requestId: input.request.id,
     actionDigest: input.decision.actionDigest,
     decisionDigest: input.decision.decisionDigest,

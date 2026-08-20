@@ -1,4 +1,4 @@
-import { buildPublicDemo, sha256 } from "./runtime.js";
+import { buildPublicDemo, buildSyntheticBrowserReceipt } from "./runtime.js";
 import { PUBLIC_POLICY, SAMPLE_DIAGNOSTIC } from "./sample-data.js";
 
 const elements = Object.fromEntries(
@@ -39,49 +39,12 @@ function recordFor(item) {
 function shortHash(value) {
   return `${value.slice(0, 10)}…${value.slice(-6)}`;
 }
-function makeReceipt(item, kind) {
-  const before = item.request.expectedState.contentHash;
-  const after = kind === "read" ? before : sha256({
-    laneId: item.request.action.laneId,
-    evidenceRecordId: item.request.action.recordId,
-    synthetic: true,
-  });
-  const result = {
-    schemaVersion: "governed-action-receipt/v1",
-    requestId: item.request.id,
-    actionDigest: item.decision.actionDigest,
-    decisionDigest: item.decision.decisionDigest,
-    approvalId: kind === "retry" ? `browser-approval-${item.request.id}` : null,
-    adapter: { id: "governed-automation", version: "browser-demo/1" },
-    result: "succeeded",
-    effects: [{
-      kind: kind === "read" ? "read" : "create_retry_record",
-      resourceId: item.request.target.resourceId,
-      beforeHash: before,
-      afterHash: after,
-    }],
-    verification: {
-      passed: true,
-      detail: kind === "read"
-        ? "Read effect preserved the target hash."
-        : "Synthetic retry record matches lane, evidence, and content hash.",
-    },
-    compensation: {
-      supported: kind === "retry",
-      authorized: kind === "retry",
-      attempted: false,
-      result: "not_needed",
-    },
-    note: "Browser-only synthetic demonstration; no external system was changed.",
-  };
-  return { ...result, receiptDigest: sha256(result) };
-}
 function renderReceipt() {
   elements["receipt-panel"].hidden = !receipt;
   elements["export-receipt"].disabled = !receipt;
   if (!receipt) return;
   const effect = receipt.effects[0];
-  elements["receipt-result"].textContent = "Succeeded in synthetic sandbox";
+  elements["receipt-result"].textContent = "Succeeded — browser-only synthetic proof";
   elements["effect-detail"].textContent = `${effect.kind} · ${shortHash(effect.beforeHash)} → ${shortHash(effect.afterHash)}`;
   elements["verification-detail"].textContent = receipt.verification.detail;
   elements["rollback-detail"].textContent = receipt.compensation.supported
@@ -150,7 +113,7 @@ document.querySelectorAll(".action-choice").forEach((button) => {
 elements["run-action"].addEventListener("click", () => {
   const item = selected();
   if (selectedType === "inspect_run_receipt") {
-    receipt = makeReceipt(item, "read");
+    receipt = buildSyntheticBrowserReceipt(item, "read");
     renderReceipt();
   } else if (selectedType === "retry_failed_lane") {
     elements["approval-target"].textContent = item.request.target.resourceId;
@@ -161,7 +124,7 @@ elements["run-action"].addEventListener("click", () => {
 });
 elements["approval-dialog"].addEventListener("close", () => {
   if (elements["approval-dialog"].returnValue === "approve") {
-    receipt = makeReceipt(selected(), "retry");
+    receipt = buildSyntheticBrowserReceipt(selected(), "retry");
     renderReceipt();
   }
 });
@@ -187,7 +150,7 @@ elements["export-receipt"].addEventListener("click", () => {
   const url = URL.createObjectURL(new Blob([`${JSON.stringify(receipt, null, 2)}\n`], { type: "application/json" }));
   const link = document.createElement("a");
   link.href = url;
-  link.download = `${selectedType}-receipt.json`;
+  link.download = `${selectedType}-synthetic-receipt.json`;
   link.click();
   URL.revokeObjectURL(url);
 });

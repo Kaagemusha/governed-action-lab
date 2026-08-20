@@ -72,7 +72,8 @@ npm run action -- prepare \
 
 `prepare` is the operator-facing read path. It validates the diagnostic,
 creates the typed request, evaluates policy, and simulates the projected effect
-as one strict `governed-action-review/v1` packet. It never approves or executes.
+as a strict review packet: `governed-action-review/v1` for diagnostic v1 or
+`governed-action-review/v2` for diagnostic v2. It never approves or executes.
 The optional six-line brief reports the action, evidence boundary, required
 authority, and next step without a model call.
 
@@ -99,8 +100,11 @@ receipt. Replay returned that same receipt without a second effect. Compensation
 was pre-authorized but not needed. No external system was connected or changed.
 
 The public console uses synthetic data to show the same status and authority
-boundary. No private diagnostic, receipt, lane identifier, path, hostname, or
-operating record is published in this repository.
+boundary. Its green and yellow exports pass the real receipt schema and digest
+verifier, include the complete precondition and timing fields, and identify the
+adapter version as `browser-synthetic/1`. They remain browser-only simulations;
+no private diagnostic, receipt, lane identifier, path, hostname, or operating
+record is published in this repository.
 
 The lower-level lifecycle remains available for inspecting each boundary:
 
