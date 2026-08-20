@@ -160,8 +160,9 @@ npm run action -- execute \
 effect, evidence, five-minute expiry, and rollback contract before accepting
 the literal confirmation `APPROVE`. `execute` discovers a separately stored
 approval and rejects `--approve`, `--yes`, and inline approval text.
-`fixture:fresh` shifts only the bundled synthetic example to the current wall
-clock so its one-day evidence window remains meaningful. Production execution
+`fixture:fresh` shifts the bundled evidence-bound v2 example to the current wall
+clock so its one-day evidence window remains meaningful; the library retains v1
+compatibility. Production execution
 always uses the system clock and has no `--at` override.
 
 ## Context Layer Lab relationship

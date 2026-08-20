@@ -19,7 +19,7 @@ function parseArgs(values) {
 const args = parseArgs(process.argv.slice(2));
 if (!args.output) throw new Error("--output is required.");
 const target = args.at ? new Date(args.at) : new Date();
-const fixture = JSON.parse(await readFile("examples/context-layer-diagnostic.json", "utf8"));
+const fixture = JSON.parse(await readFile("examples/context-layer-diagnostic-v2.json", "utf8"));
 const fresh = freshenPublicFixture(fixture, target);
 await writeFile(args.output, `${JSON.stringify(fresh, null, 2)}\n`);
 process.stdout.write(`Fresh synthetic diagnostic: ${args.output}\nAs of: ${fresh.scenario.asOf}\n`);
