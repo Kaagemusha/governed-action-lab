@@ -48,5 +48,8 @@ test("CLI rejects a tampered portable proof", async (context) => {
   proof.receipt.result = "refused";
   const input = join(directory, "tampered.json");
   await writeFile(input, JSON.stringify(proof));
-  await assert.rejects(runCli(["verify-proof", "--proof", input]), /receipt schema or digest|proof/i);
+  await assert.rejects(
+    runCli(["verify-proof", "--proof", input]),
+    /receipt schema or digest is invalid/,
+  );
 });
