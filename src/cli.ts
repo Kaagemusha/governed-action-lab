@@ -17,6 +17,7 @@ import { proposeActionFromDiagnostic, recheckProposal } from "./context-adapter.
 import { executeGovernedAction, IdempotencyStateError } from "./executor.js";
 import { evaluateAction, systemClock } from "./policy.js";
 import { prepareActionReview, renderActionReviewBrief } from "./operator-review.js";
+import { verifyPortableProof } from "./proof-packet.js";
 import { verifyReceipt } from "./receipts.js";
 import { FileReceiptStore } from "./store.js";
 
@@ -175,6 +176,19 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
     await output(result, args);
     return result.valid ? 0 : 2;
   }
+  if (command === "verify-proof") {
+    const proof = await verifyPortableProof(await json(required(args, "proof")));
+    await output(
+      {
+        valid: true,
+        schemaVersion: proof.schemaVersion,
+        mode: proof.mode,
+        packetDigest: proof.packetDigest,
+      },
+      args,
+    );
+    return 0;
+  }
   if (command === "rollback-request") {
     await output({
       executable: false,
@@ -203,7 +217,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
     await output(results, args);
     return 0;
   }
-  throw new Error("Command must be prepare, propose, evaluate, simulate, approve, execute, verify-receipt, rollback-request, or demo.");
+  throw new Error("Command must be prepare, propose, evaluate, simulate, approve, execute, verify-receipt, verify-proof, rollback-request, or demo.");
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

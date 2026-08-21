@@ -144,6 +144,7 @@ executor's read path. Generate or verify byte-for-byte drift with:
 ```bash
 npm run proof:sync
 npm run proof:check
+npm run action -- verify-proof --proof docs/governed-action-proof.json
 ```
 
 `verifyPortableProof` validates strict schemas, frozen producer metadata,
@@ -153,6 +154,9 @@ digest. These digests demonstrate integrity and binding inside this artifact;
 they are not signatures, authenticity claims, external audit anchors, or proof
 that an external system was inspected. The packet contains no approval grant,
 yellow execution, private path, hostname, or operating record.
+The CLI verifier accepts any supplied packet, runs that same strict verifier,
+and returns only a compact validity result and identity fields; it does not
+execute the embedded action or replay the packet contents.
 
 The lower-level lifecycle remains available for inspecting each boundary:
 
