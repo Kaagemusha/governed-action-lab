@@ -5,10 +5,10 @@ import { dirname, join } from "node:path";
 import { digestOmitting } from "./canonical.js";
 import {
   APPROVAL_VERSION,
+  actionRequestSchema,
   approvalGrantSchema,
-  type ActionRequest,
+  policyDecisionSchema,
   type ApprovalGrant,
-  type PolicyDecision,
 } from "./contracts.js";
 import { actionDigest, type Clock, systemClock } from "./policy.js";
 
@@ -109,12 +109,14 @@ export class OperatorApprovalProvider {
   ) {}
 
   async issue(
-    request: ActionRequest,
-    decision: PolicyDecision,
+    requestInput: unknown,
+    decisionInput: unknown,
     operatorId: string,
     confirmed: true,
     lifetimeSeconds = 300,
   ): Promise<ApprovalGrant> {
+    const request = actionRequestSchema.parse(requestInput);
+    const decision = policyDecisionSchema.parse(decisionInput);
     if (!confirmed || decision.classification !== "yellow" || decision.disposition !== "approval_required") {
       throw new Error("Only a confirmed operator may approve an approval-required yellow decision.");
     }
@@ -146,13 +148,18 @@ export class OperatorApprovalProvider {
 
 export async function validateAndConsumeApproval(
   store: ApprovalStore | null,
-  request: ActionRequest,
-  decision: PolicyDecision,
+  requestInput: unknown,
+  decisionInput: unknown,
   clock: Clock = systemClock,
 ): Promise<ApprovalValidation> {
+  const request = actionRequestSchema.parse(requestInput);
+  const decision = policyDecisionSchema.parse(decisionInput);
   if (!store) return { valid: false, code: "missing" };
-  const grant = await store.find(actionDigest(request), decision.decisionDigest);
-  if (!grant) return { valid: false, code: "missing" };
+  const grantInput = await store.find(actionDigest(request), decision.decisionDigest);
+  if (!grantInput) return { valid: false, code: "missing" };
+  const parsedGrant = approvalGrantSchema.safeParse(grantInput);
+  if (!parsedGrant.success) return { valid: false, code: "tampered" };
+  const grant = parsedGrant.data;
   if (digestOmitting(grant, "grantDigest") !== grant.grantDigest) return { valid: false, code: "tampered" };
   if (grant.actionDigest !== actionDigest(request) || grant.decisionDigest !== decision.decisionDigest) {
     return { valid: false, code: "scope_mismatch" };

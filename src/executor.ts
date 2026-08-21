@@ -1,7 +1,14 @@
 import type { ApprovalStore } from "./approval.js";
 import { validateAndConsumeApproval } from "./approval.js";
 import type { ActionAdapter, AdapterExecution } from "./adapters/synthetic-automation.js";
-import type { ActionRequest, ExecutionReceipt, PolicyDecision, PolicyManifest } from "./contracts.js";
+import {
+  actionRequestSchema,
+  policyDecisionSchema,
+  type ActionRequest,
+  type ExecutionReceipt,
+  type PolicyDecision,
+  type PolicyManifest,
+} from "./contracts.js";
 import { digestOmitting } from "./canonical.js";
 import { actionDigest, evaluateAction, type Clock, type EvidenceEligibility, systemClock } from "./policy.js";
 import { createReceipt } from "./receipts.js";
@@ -20,6 +27,7 @@ export type ExecutorDependencies = {
   adapter: ActionAdapter;
   approvals: ApprovalStore | null;
   receipts: ReceiptStore;
+  verifiedPrincipal: ActionRequest["proposer"];
   clock?: Clock;
   receiptIdFactory?: () => string;
 };
@@ -38,11 +46,28 @@ export class IdempotencyStateError extends Error {
   }
 }
 
+export class PrincipalMismatchError extends Error {
+  readonly code = "PRINCIPAL_MISMATCH";
+
+  constructor() {
+    super("Verified principal does not match the action proposer.");
+    this.name = "PrincipalMismatchError";
+  }
+}
+
 export async function executeGovernedAction(
-  request: ActionRequest,
-  decision: PolicyDecision,
+  requestInput: unknown,
+  decisionInput: unknown,
   dependencies: ExecutorDependencies,
 ): Promise<ExecutionReceipt> {
+  const request = actionRequestSchema.parse(requestInput);
+  const decision = policyDecisionSchema.parse(decisionInput);
+  if (
+    dependencies.verifiedPrincipal.kind !== request.proposer.kind ||
+    dependencies.verifiedPrincipal.id !== request.proposer.id
+  ) {
+    throw new PrincipalMismatchError();
+  }
   const requestActionDigest = actionDigest(request);
   const claim = await dependencies.receipts.claim(
     request.idempotencyKey,

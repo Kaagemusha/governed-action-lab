@@ -47,8 +47,8 @@ function reason(
   return { code, message: messages[code]!, evidenceRecordIds, policyRuleId: ruleId };
 }
 
-export function actionDigest(request: ActionRequest): string {
-  return sha256(request);
+export function actionDigest(input: unknown): string {
+  return sha256(actionRequestSchema.parse(input));
 }
 
 export function evaluateAction(

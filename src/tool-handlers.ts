@@ -27,6 +27,7 @@ export type ToolDependencies = {
   approvals: ApprovalStore | null;
   receipts: ReceiptStore;
   registry: Map<string, RegisteredAction>;
+  verifiedPrincipal: ActionRequest["proposer"];
   clock: Clock;
 };
 
@@ -85,6 +86,7 @@ export async function handleExecuteApprovedAction(
       adapter: dependencies.adapter,
       approvals: dependencies.approvals,
       receipts: dependencies.receipts,
+      verifiedPrincipal: dependencies.verifiedPrincipal,
       clock: dependencies.clock,
     });
   } catch (error) {

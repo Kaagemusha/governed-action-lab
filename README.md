@@ -57,6 +57,31 @@ npm run action -- demo --json
 
 Serve `docs/` with any static file server to use the local-first console.
 
+## 60-second attack demo
+
+Run five deterministic attacks through the real schema, policy, approval,
+executor, state-recheck, and receipt-verification code:
+
+```bash
+npm run demo:attacks
+```
+
+Expected output:
+
+```text
+ARGUMENT_SUBSTITUTION: DENIED
+APPROVAL_REPLAY: DENIED
+CONFUSED_DEPUTY: DENIED
+TOCTOU_CHANGED_STATE: DENIED
+RECEIPT_CONTENT_TAMPERING: DETECTED
+5/5 expected defenses held
+```
+
+The demo uses a frozen synthetic clock and temporary local state. It covers only
+the five named checks; the receipt case changes content while leaving its recorded
+digest unchanged. Receipt collection history and cross-call information-flow
+composition are explicitly outside the defended boundary.
+
 Artifact-oriented commands:
 
 ```bash
@@ -78,6 +103,10 @@ The optional six-line brief reports the action, evidence boundary, required
 authority, and next step without a model call.
 
 ### Operational proof
+
+Operational lineage: this pattern has been exercised in a private governed vault
+workflow. This public repository remains synthetic, public-safe, and disconnected
+from that workflow and from any production system.
 
 The review path runs after a scheduled private context diagnostic. A supervised
 10-case shadow pilot covered healthy, failed, preserved-local, missing, stale,
@@ -198,7 +227,7 @@ Context diagnostic v1 or v2
   -> allow / approval boundary / refusal
   -> precondition recheck
   -> allowlisted synthetic adapter
-  -> verification and append-only receipt
+  -> verification and receipt record
 ```
 
 ## Architecture
@@ -216,7 +245,7 @@ flowchart LR
     R --> X
     X --> V["Deterministic verification"]
     X -->|partial failure| K["Pre-authorized compensation"]
-    V --> E["Append-only receipt"]
+    V --> E["Receipt record"]
     K --> E
     M["Agent-facing MCP"] --> P
     M --> X
@@ -242,7 +271,10 @@ Strict Zod schemas reject unknown keys at persisted and transport boundaries:
 
 Canonical JSON recursively sorts keys and rejects non-JSON values before
 SHA-256 hashing. An approval binds both the complete request digest and the
-decision digest. Receipts describe bounded resources and before/after hashes.
+decision digest. The executor also requires an exact match to a host-supplied
+verified principal; the bundled CLI and MCP server use a fixed synthetic identity
+and do not provide authentication. Receipts describe bounded resources and
+before/after hashes.
 Before execution, each idempotency key is atomically and permanently bound to
 the complete action digest. A concurrent duplicate reports in-progress, a
 different action reports a conflict, and any receipt with effects is replayed
@@ -254,9 +286,12 @@ retains v1 as a compatible evidence format. Policy `1.2.0` was the dual-read,
 v1-default transition; legacy policy `1.1.0` remains v1-only. Changing the
 policy version deliberately invalidates earlier decision and approval digests.
 
-Receipts are append-only in this implementation, not tamper-proof audit logs.
-Digest verification detects changed content; it does not defend against a
-process that controls the machine and can rewrite both data and code.
+Receipt stores append during their ordinary API flow, but the verifier checks one
+presented receipt rather than an anchored sequence. Digest verification detects
+changed receipt content when its recorded digest is left unchanged; it cannot
+detect whole-receipt deletion, valid insertion, reordering, or duplication, and it
+does not defend against a process that controls the machine and can rewrite both
+data and code.
 
 ## MCP tools
 

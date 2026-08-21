@@ -101,6 +101,7 @@ export async function buildPortableGreenProof(input: {
     adapter,
     approvals: null,
     receipts: new MemoryReceiptStore(),
+    verifiedPrincipal: review.request.proposer,
     clock,
     receiptIdFactory: () => PORTABLE_PROOF_RECEIPT_ID,
   });

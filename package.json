@@ -18,6 +18,7 @@
     "eval": "npm run build --silent && node dist/src/eval-runner.js",
     "contract:check": "node scripts/check-context-contract.mjs",
     "fixture:fresh": "npm run build --silent && node scripts/freshen-public-fixture.mjs",
+    "demo:attacks": "npm run build --silent && node dist/src/attack-demo.js",
     "demo:sync": "npm run build --silent && node scripts/build-browser-runtime.mjs && node scripts/sync-demo.mjs",
     "demo:check": "npm run build --silent && node scripts/build-browser-runtime.mjs --check && node scripts/sync-demo.mjs --check",
     "proof:sync": "npm run build --silent && node scripts/build-portable-proof.mjs",

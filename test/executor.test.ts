@@ -7,9 +7,16 @@ import test from "node:test";
 
 import { MemoryApprovalStore, OperatorApprovalProvider } from "../src/approval.js";
 import { SyntheticAutomationAdapter } from "../src/adapters/synthetic-automation.js";
-import type { ActionRequest, PolicyManifest } from "../src/contracts.js";
-import { executeGovernedAction } from "../src/executor.js";
-import { evaluateAction } from "../src/policy.js";
+import {
+  actionRequestSchema,
+  type ActionRequest,
+  type PolicyManifest,
+} from "../src/contracts.js";
+import {
+  executeGovernedAction,
+  PrincipalMismatchError,
+} from "../src/executor.js";
+import { actionDigest, evaluateAction } from "../src/policy.js";
 import { FileReceiptStore, MemoryReceiptStore, type ReceiptStore } from "../src/store.js";
 
 const policy = JSON.parse(await readFile("data/policy.json", "utf8")) as PolicyManifest;
@@ -58,7 +65,14 @@ async function setup(action = request(), receipts: ReceiptStore = new MemoryRece
     currentTargetHash: targetHash,
     diagnosticAsOf: "2026-07-28T09:10:00Z",
   });
-  return { adapter, approvals, receipts, decision, loadCurrentState };
+  return {
+    adapter,
+    approvals,
+    receipts,
+    decision,
+    loadCurrentState,
+    verifiedPrincipal: action.proposer,
+  };
 }
 
 const receiptStoreFactories: Array<[string, () => Promise<ReceiptStore>]> = [
@@ -170,6 +184,135 @@ test("altered caller classification cannot select an execution path", async () =
 
   assert.equal(receipt.result, "stale");
   assert.equal(state.adapter.executeCalls, 0);
+});
+
+test("verified principal mismatch is rejected before claims, approvals, or adapter calls", async () => {
+  const action = request();
+  const state = await setup(action);
+  await new OperatorApprovalProvider(state.approvals, clock).issue(
+    action,
+    state.decision,
+    "operator",
+    true,
+  );
+
+  await assert.rejects(
+    executeGovernedAction(action, state.decision, {
+      ...state,
+      policy,
+      evidence,
+      clock,
+      verifiedPrincipal: { kind: "agent", id: "different-agent" },
+    }),
+    (error: unknown) =>
+      error instanceof PrincipalMismatchError &&
+      error.code === "PRINCIPAL_MISMATCH",
+  );
+  assert.equal(state.approvals.consumed.size, 0);
+  assert.equal((await state.receipts.list()).length, 0);
+  assert.equal(state.adapter.executeCalls, 0);
+
+  const accepted = await executeGovernedAction(action, state.decision, {
+    ...state,
+    policy,
+    evidence,
+    clock,
+  });
+  assert.equal(accepted.result, "succeeded");
+  assert.equal(state.adapter.executeCalls, 1);
+});
+
+test("post-approval action argument substitution has no executor effect", async () => {
+  const action = request();
+  const state = await setup(action);
+  await new OperatorApprovalProvider(state.approvals, clock).issue(
+    action,
+    state.decision,
+    "operator",
+    true,
+  );
+  if (action.action.type !== "retry_failed_lane") {
+    throw new Error("Expected retry action.");
+  }
+  const substituted: ActionRequest = {
+    ...action,
+    action: { ...action.action, retryPayloadHash: "f".repeat(64) },
+  };
+  const substitutedDecision = evaluateAction(substituted, policy, evidence, clock);
+
+  const receipt = await executeGovernedAction(substituted, substitutedDecision, {
+    ...state,
+    policy,
+    evidence,
+    clock,
+  });
+
+  assert.equal(receipt.result, "refused");
+  assert.match(receipt.preconditionCheck.detail, /missing/);
+  assert.equal(receipt.effects.length, 0);
+  assert.equal(state.approvals.consumed.size, 0);
+  assert.equal(state.adapter.executeCalls, 0);
+});
+
+test("one raw payload has one strict normalized interpretation at every gate", async () => {
+  const complete = request();
+  if (complete.action.type !== "retry_failed_lane") {
+    throw new Error("Expected retry action.");
+  }
+  const { simulateFailure: _omitted, ...actionWithoutDefault } = complete.action;
+  const raw = { ...complete, action: actionWithoutDefault };
+  const normalized = actionRequestSchema.parse(raw);
+  const state = await setup(normalized);
+  const decision = evaluateAction(raw, policy, evidence, clock);
+  await new OperatorApprovalProvider(state.approvals, clock).issue(
+    raw,
+    decision,
+    "operator",
+    true,
+  );
+  let adapterRequest: ActionRequest | undefined;
+  const execute = state.adapter.execute.bind(state.adapter);
+  state.adapter.execute = async (candidate) => {
+    adapterRequest = candidate;
+    return execute(candidate);
+  };
+
+  const receipt = await executeGovernedAction(raw, decision, {
+    ...state,
+    policy,
+    evidence,
+    clock,
+  });
+
+  assert.equal(receipt.result, "succeeded");
+  assert.equal(normalized.action.type, "retry_failed_lane");
+  if (normalized.action.type === "retry_failed_lane") {
+    assert.equal(normalized.action.simulateFailure, "none");
+  }
+  assert.equal(actionDigest(raw), actionDigest(normalized));
+  assert.equal(decision.actionDigest, actionDigest(normalized));
+  assert.deepEqual(adapterRequest, normalized);
+
+  const unknown = { ...raw, unexpected: true };
+  assert.throws(() => actionDigest(unknown));
+  await assert.rejects(
+    new OperatorApprovalProvider(new MemoryApprovalStore(), clock).issue(
+      unknown,
+      decision,
+      "operator",
+      true,
+    ),
+  );
+  await assert.rejects(
+    executeGovernedAction(unknown, decision, {
+      ...state,
+      approvals: new MemoryApprovalStore(),
+      receipts: new MemoryReceiptStore(),
+      policy,
+      evidence,
+      clock,
+    }),
+  );
 });
 
 test("runtime adapter identity must match the authorized target", async () => {

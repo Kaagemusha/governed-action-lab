@@ -20,6 +20,11 @@ import { prepareActionReview, renderActionReviewBrief } from "./operator-review.
 import { verifyReceipt } from "./receipts.js";
 import { FileReceiptStore } from "./store.js";
 
+const CLI_VERIFIED_PRINCIPAL = {
+  kind: "agent",
+  id: "public-demo-agent",
+} as const;
+
 type Args = Record<string, string | boolean>;
 function parseArgs(values: string[]): Args {
   const result: Args = {};
@@ -151,6 +156,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
         adapter: new SyntheticAutomationAdapter(resolve(required(args, "sandbox"))),
         approvals: new FileApprovalStore(required(args, "approval-store")),
         receipts: new FileReceiptStore(required(args, "receipt-store")),
+        verifiedPrincipal: CLI_VERIFIED_PRINCIPAL,
         clock: systemClock,
       });
     } catch (error) {

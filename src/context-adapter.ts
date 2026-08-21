@@ -2,6 +2,7 @@ import { sha256 } from "./canonical.js";
 import {
   REQUEST_VERSION,
   actionRequestSchema,
+  catalogActionTypeSchema,
   diagnosticSnapshotSchema,
   type ActionRequest,
   type CatalogAction,
@@ -82,13 +83,14 @@ export function proposeActionFromDiagnostic(
   diagnosticInput: unknown,
   input: ProposalInput,
 ): AdaptedProposal {
+  const actionType = catalogActionTypeSchema.parse(input.actionType);
   const diagnostic = parseDiagnostic(diagnosticInput);
   const selected = narrowLaneInvariant(diagnostic, input.laneId);
-  if (input.actionType === "retry_failed_lane" && selected.latest.outcome !== "failed") {
+  if (actionType === "retry_failed_lane" && selected.latest.outcome !== "failed") {
     throw new Error("Retry requires the latest eligible raw receipt to be failed.");
   }
   if (
-    input.actionType === "delete_preserved_output" &&
+    actionType === "delete_preserved_output" &&
     selected.latest.outcome !== "preserved_local"
   ) {
     throw new Error("Preserved-output deletion requires a preserved_local receipt.");
@@ -97,7 +99,7 @@ export function proposeActionFromDiagnostic(
   const diagnosticHash = sha256(diagnostic);
   const proposedAt = input.proposedAt ?? diagnostic.scenario.asOf;
   const action: CatalogAction =
-    input.actionType === "retry_failed_lane"
+    actionType === "retry_failed_lane"
       ? {
           type: "retry_failed_lane",
           laneId: input.laneId,
@@ -108,7 +110,7 @@ export function proposeActionFromDiagnostic(
           }),
           simulateFailure: input.simulateFailure ?? "none",
         }
-      : input.actionType === "delete_preserved_output"
+      : actionType === "delete_preserved_output"
         ? {
             type: "delete_preserved_output",
             laneId: input.laneId,
@@ -127,9 +129,9 @@ export function proposeActionFromDiagnostic(
     proposedAt,
     proposer: { kind: "agent", id: input.proposerId ?? "public-demo-agent" },
     intent:
-      input.actionType === "inspect_run_receipt"
+      actionType === "inspect_run_receipt"
         ? "Inspect the latest run receipt."
-        : input.actionType === "retry_failed_lane"
+        : actionType === "retry_failed_lane"
           ? "Retry the failed lane in the synthetic sandbox."
           : "Delete the preserved local output.",
     action,
@@ -137,7 +139,7 @@ export function proposeActionFromDiagnostic(
       adapterId: "governed-automation",
       resourceId: input.laneId,
       environment:
-        input.actionType === "inspect_run_receipt" ? "read_only" : "synthetic_sandbox",
+        actionType === "inspect_run_receipt" ? "read_only" : "synthetic_sandbox",
     },
     evidence: {
       diagnosticFormat: diagnostic.format,
@@ -147,9 +149,10 @@ export function proposeActionFromDiagnostic(
     },
     expectedState: { contentHash: targetHash },
   };
+  const parsedRequest = actionRequestSchema.parse(request);
   return {
     diagnostic,
-    request,
+    request: parsedRequest,
     targetHash,
     evidence: {
       presentRecordIds: diagnostic.records.map((record) => record.id),

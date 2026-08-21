@@ -34,6 +34,7 @@ const dependencies: ToolDependencies = {
   approvals: new FileApprovalStore(resolve(".approvals/approvals.json")),
   receipts: new FileReceiptStore(resolve(".receipts/receipts.json")),
   registry: new Map(),
+  verifiedPrincipal: { kind: "agent", id: "public-demo-agent" },
   clock: systemClock,
 };
 const server = new McpServer({ name: "governed-action-lab", version: "0.2.0" });

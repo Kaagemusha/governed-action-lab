@@ -41,6 +41,14 @@ test("v2 diagnostic creates the same bounded action classes", () => {
 });
 
 test("tampered assessment, missing evidence, stale evidence, and unsupported version fail", () => {
+  assert.throws(
+    () =>
+      proposeActionFromDiagnostic(fixture, {
+        actionType: "run_shell",
+        laneId: "site-refresh",
+      } as never),
+    /Invalid option/,
+  );
   const tampered = structuredClone(fixture) as any;
   tampered.assessment.laneAssessments.find((lane: any) => lane.id === "site-refresh").outcome = "success";
   assert.throws(

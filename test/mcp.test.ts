@@ -29,6 +29,7 @@ async function dependencies(): Promise<ToolDependencies> {
     approvals: new MemoryApprovalStore(),
     receipts: new MemoryReceiptStore(),
     registry: new Map(),
+    verifiedPrincipal: { kind: "agent", id: "public-demo-agent" },
     clock,
   };
 }
@@ -57,6 +58,31 @@ test("execute accepts an action identifier, not an approval payload", async () =
   const result = await handleExecuteApprovedAction(deps, { actionId: "missing" });
   assert.equal(result.ok, false);
   assert.equal((result.result as { code: string }).code, "ACTION_NOT_REGISTERED");
+});
+
+test("MCP cannot reach the mutating adapter without a separate approval", async () => {
+  const deps = await dependencies();
+  const proposal = proposeActionFromDiagnostic(fixture, {
+    actionType: "retry_failed_lane",
+    laneId: "site-refresh",
+  });
+  handleEvaluateAction(deps, {
+    request: proposal.request,
+    diagnostic: fixture,
+  });
+
+  const response = await handleExecuteApprovedAction(deps, {
+    actionId: proposal.request.id,
+  });
+  const receipt = response.result as {
+    result: string;
+    effects: unknown[];
+  };
+
+  assert.equal(response.ok, false);
+  assert.equal(receipt.result, "refused");
+  assert.equal(receipt.effects.length, 0);
+  assert.equal((deps.adapter as SyntheticAutomationAdapter).executeCalls, 0);
 });
 
 test("MCP execution reports an idempotency conflict without running another action", async () => {

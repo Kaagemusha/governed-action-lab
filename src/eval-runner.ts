@@ -66,6 +66,7 @@ async function executorSetup(action = retry()) {
     adapter,
     approvals,
     receipts,
+    verifiedPrincipal: action.request.proposer,
     clock: executionClock,
   };
   return { ...action, adapter, approvals, receipts, decision, dependencies };
@@ -94,6 +95,7 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
       adapter,
       approvals: null,
       receipts: new MemoryReceiptStore(),
+      verifiedPrincipal: proposal.request.proposer,
       clock: executionClock,
     });
     return { code: receipt.result, effects: receipt.effects.length };
@@ -210,6 +212,7 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
       adapter,
       approvals,
       receipts: new MemoryReceiptStore(),
+      verifiedPrincipal: proposal.request.proposer,
       clock: executionClock,
     });
     return { code: receipt.result === "refused" ? "refuse" : receipt.result, adapterCalls: adapter.executeCalls };
