@@ -8,6 +8,7 @@ import {
   type ExecutionReceipt,
   type PolicyDecision,
   type PolicyManifest,
+  type PolicyTrustBinding,
 } from "./contracts.js";
 import { digestOmitting } from "./canonical.js";
 import { actionDigest, evaluateAction, type Clock, type EvidenceEligibility, systemClock } from "./policy.js";
@@ -22,6 +23,7 @@ export type ExecutionState = {
 
 export type ExecutorDependencies = {
   policy: PolicyManifest;
+  policyTrust?: PolicyTrustBinding;
   evidence: EvidenceEligibility;
   loadCurrentState(): Promise<ExecutionState>;
   adapter: ActionAdapter;
@@ -90,6 +92,7 @@ export async function executeGovernedAction(
     dependencies.policy,
     current.evidence,
     { now: () => new Date(decision.decisionAt) },
+    dependencies.policyTrust,
   );
   const expectedHash = request.expectedState.contentHash;
   const evidenceAge =
@@ -100,7 +103,8 @@ export async function executeGovernedAction(
     decision.actionDigest !== requestActionDigest ||
     decision.decisionDigest !== currentDecision.decisionDigest ||
     decision.policy.id !== dependencies.policy.id ||
-    decision.policy.version !== dependencies.policy.version;
+    decision.policy.version !== dependencies.policy.version ||
+    decision.policy.manifestDigest !== dependencies.policyTrust?.manifestDigest;
   const targetChanged = expectedHash !== undefined && expectedHash !== current.currentTargetHash;
 
   const finish = async (

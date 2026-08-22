@@ -115,7 +115,7 @@ export const policyDecisionSchema = z
     id,
     requestId: id,
     actionDigest: digest,
-    policy: z.object({ id, version: id }).strict(),
+    policy: z.object({ id, version: id, manifestDigest: digest.optional() }).strict(),
     classification: z.enum(["green", "yellow", "red"]),
     disposition: z.enum(["allow", "approval_required", "refuse"]),
     reasonCodes: z.array(id).min(1),
@@ -235,11 +235,32 @@ export const policyRuleSchema = z
     adapterId: id.nullable(),
     classification: z.enum(["green", "yellow", "red"]),
     allowedEnvironment: z.enum(["read_only", "synthetic_sandbox"]).nullable(),
+    allowedResourceIds: z.array(id).min(1).optional(),
     approvalRequired: z.boolean(),
     maxApprovalLifetimeSeconds: z.number().int().positive().nullable(),
     requiredEvidenceOutcome: z.enum(["success", "failed", "preserved_local"]).nullable(),
     reversible: z.boolean(),
     verificationRequired: z.boolean(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (
+      value.allowedResourceIds &&
+      new Set(value.allowedResourceIds).size !== value.allowedResourceIds.length
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["allowedResourceIds"],
+        message: "Allowed resource IDs must be unique.",
+      });
+    }
+  });
+
+export const policyTrustBindingSchema = z
+  .object({
+    id,
+    version: id,
+    manifestDigest: digest,
   })
   .strict();
 
@@ -617,6 +638,7 @@ export type PolicyDecision = z.infer<typeof policyDecisionSchema>;
 export type ApprovalGrant = z.infer<typeof approvalGrantSchema>;
 export type ExecutionReceipt = z.infer<typeof executionReceiptSchema>;
 export type PolicyManifest = z.infer<typeof policyManifestSchema>;
+export type PolicyTrustBinding = z.infer<typeof policyTrustBindingSchema>;
 export type DiagnosticSnapshot = z.infer<typeof diagnosticSnapshotSchema>;
 export type DiagnosticSnapshotV1 = z.infer<typeof diagnosticSnapshotV1Schema>;
 export type ActionReview = z.infer<typeof actionReviewSchema>;

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import type { ActionRequest, PolicyManifest } from "../src/contracts.js";
+import { sha256 } from "../src/canonical.js";
 import { evaluateAction } from "../src/policy.js";
 
 const policy = JSON.parse(await readFile("data/policy.json", "utf8")) as PolicyManifest;
@@ -169,4 +170,69 @@ test("unknown adapter, environment, policy, or invalid evidence fail closed", ()
     assert.equal(decision.disposition, "refuse");
     assert.ok(decision.reasonCodes.includes(code));
   }
+});
+
+test("a non-public host policy requires an exact digest-pinned trust binding", () => {
+  const hostPolicy: PolicyManifest = {
+    ...policy,
+    id: "host-policy",
+    version: "1",
+    rules: policy.rules.map((rule) => ({
+      ...rule,
+      allowedResourceIds: ["site-refresh"],
+    })),
+  };
+  const untrusted = evaluateAction(base, hostPolicy, eligible, clock);
+  assert.equal(untrusted.disposition, "refuse");
+  assert.ok(untrusted.reasonCodes.includes("UNKNOWN_POLICY"));
+
+  const trust = {
+    id: hostPolicy.id,
+    version: hostPolicy.version,
+    manifestDigest: sha256(hostPolicy),
+  };
+  const trusted = evaluateAction(base, hostPolicy, eligible, clock, trust);
+  assert.equal(trusted.disposition, "allow");
+  assert.equal(trusted.policy.manifestDigest, trust.manifestDigest);
+
+  const tamperedPolicy = {
+    ...hostPolicy,
+    maxEvidenceAgeSeconds: hostPolicy.maxEvidenceAgeSeconds + 1,
+  };
+  const tampered = evaluateAction(base, tamperedPolicy, eligible, clock, trust);
+  assert.equal(tampered.disposition, "refuse");
+  assert.ok(tampered.reasonCodes.includes("UNKNOWN_POLICY"));
+
+  const tamperedTrust = {
+    ...trust,
+    manifestDigest: sha256(tamperedPolicy),
+  };
+  const replaced = evaluateAction(base, tamperedPolicy, eligible, clock, tamperedTrust);
+  assert.notEqual(replaced.decisionDigest, trusted.decisionDigest);
+  assert.notEqual(replaced.policy.manifestDigest, trusted.policy.manifestDigest);
+});
+
+test("resource allowlists reject lane substitution under an otherwise trusted policy", () => {
+  const hostPolicy: PolicyManifest = {
+    ...policy,
+    id: "host-policy",
+    version: "1",
+    rules: policy.rules.map((rule) => ({
+      ...rule,
+      allowedResourceIds: ["site-refresh"],
+    })),
+  };
+  const trust = {
+    id: hostPolicy.id,
+    version: hostPolicy.version,
+    manifestDigest: sha256(hostPolicy),
+  };
+  const substituted: ActionRequest = {
+    ...base,
+    action: { ...base.action, laneId: "other-lane" },
+    target: { ...base.target, resourceId: "other-lane" },
+  };
+  const decision = evaluateAction(substituted, hostPolicy, eligible, clock, trust);
+  assert.equal(decision.disposition, "refuse");
+  assert.ok(decision.reasonCodes.includes("TARGET_NOT_ALLOWED"));
 });
