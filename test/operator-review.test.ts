@@ -69,6 +69,34 @@ test("v2 evidence remains explicit in the operator review", async () => {
   assert.equal(verifyActionReview(review).status, "APPROVAL_REQUIRED");
 });
 
+test("operator review binds an exact trusted host policy manifest", async () => {
+  const hostPolicy: PolicyManifest = {
+    ...policy,
+    id: "host-policy",
+    version: "1",
+    rules: policy.rules.map((rule) => ({
+      ...rule,
+      allowedResourceIds: ["site-refresh"],
+    })),
+  };
+  const policyTrust = {
+    id: hostPolicy.id,
+    version: hostPolicy.version,
+    manifestDigest: sha256(hostPolicy),
+  };
+  const review = await prepareActionReview(
+    diagnosticV2,
+    { actionType: "retry_failed_lane", laneId: "site-refresh" },
+    hostPolicy,
+    adapter,
+    clock,
+    policyTrust,
+  );
+  assert.equal(review.status, "APPROVAL_REQUIRED");
+  assert.equal(review.decision.policy.manifestDigest, policyTrust.manifestDigest);
+  assert.equal(verifyActionReview(review).id, review.id);
+});
+
 test("review verification rejects a format mismatch after digest recomputation", async () => {
   const review = await prepareActionReview(
     diagnosticV2,

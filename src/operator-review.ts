@@ -8,6 +8,7 @@ import {
   type ActionReview,
   type CatalogAction,
   type PolicyManifest,
+  type PolicyTrustBinding,
 } from "./contracts.js";
 import { proposeActionFromDiagnostic } from "./context-adapter.js";
 import { actionDigest, evaluateAction, type Clock } from "./policy.js";
@@ -18,6 +19,7 @@ export async function prepareActionReview(
   policy: PolicyManifest,
   adapter: ActionAdapter,
   clock?: Clock,
+  policyTrust?: PolicyTrustBinding,
 ): Promise<ActionReview> {
   const proposal = proposeActionFromDiagnostic(diagnosticInput, {
     actionType: input.actionType,
@@ -30,6 +32,7 @@ export async function prepareActionReview(
     policy,
     proposal.evidence,
     clock ?? { now: () => new Date(proposal.request.proposedAt) },
+    policyTrust,
   );
   const plan = await adapter.plan(proposal.request);
   const status = {
