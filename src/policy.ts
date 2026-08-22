@@ -4,6 +4,7 @@ import {
   actionRequestSchema,
   policyDecisionSchema,
   policyManifestSchema,
+  policyTrustBindingSchema,
   type ActionRequest,
   type PolicyDecision,
   type PolicyManifest,
@@ -31,6 +32,7 @@ const messages: Record<string, string> = {
   ADAPTER_MISMATCH: "The requested adapter is not allowlisted for this action.",
   ENVIRONMENT_MISMATCH: "The requested environment is not allowed for this action.",
   TARGET_MISMATCH: "The target does not match the typed action lane.",
+  TARGET_NOT_ALLOWED: "The target resource is not allowlisted by this policy rule.",
   EVIDENCE_MISSING: "One or more required evidence records are absent.",
   EVIDENCE_INVALID: "Required evidence is invalid or degraded.",
   EVIDENCE_OUTCOME_MISMATCH: "The raw evidence outcome does not satisfy this action rule.",
@@ -56,6 +58,7 @@ export function evaluateAction(
   manifestInput: unknown,
   evidence: EvidenceEligibility,
   clock: Clock = systemClock,
+  trustBindingInput?: unknown,
 ): PolicyDecision {
   const request = actionRequestSchema.parse(input);
   const manifest = policyManifestSchema.parse(manifestInput);
@@ -67,8 +70,17 @@ export function evaluateAction(
   const publicPolicy =
     manifest.id === "governed-action-lab-public-policy" &&
     ["1.1.0", "1.2.0", "1.3.0"].includes(manifest.version);
+  const manifestDigest = sha256(manifest);
+  const trustBinding = trustBindingInput === undefined
+    ? null
+    : policyTrustBindingSchema.parse(trustBindingInput);
+  const hostPolicy =
+    trustBinding !== null &&
+    trustBinding.id === manifest.id &&
+    trustBinding.version === manifest.version &&
+    trustBinding.manifestDigest === manifestDigest;
 
-  if (!publicPolicy) reasons.push(reason("UNKNOWN_POLICY", rule.id, []));
+  if (!publicPolicy && !hostPolicy) reasons.push(reason("UNKNOWN_POLICY", rule.id, []));
   const acceptedDiagnosticFormats =
     manifest.version === "1.1.0"
       ? [manifest.diagnosticFormat]
@@ -90,6 +102,12 @@ export function evaluateAction(
   }
   if (request.target.resourceId !== request.action.laneId) {
     reasons.push(reason("TARGET_MISMATCH", rule.id, evidenceIds));
+  }
+  if (
+    rule.allowedResourceIds !== undefined &&
+    !rule.allowedResourceIds.includes(request.target.resourceId)
+  ) {
+    reasons.push(reason("TARGET_NOT_ALLOWED", rule.id, evidenceIds));
   }
   if (
     rule.classification === "green" &&
@@ -132,7 +150,11 @@ export function evaluateAction(
     id: `decision-${actionHash.slice(0, 16)}`,
     requestId: request.id,
     actionDigest: actionHash,
-    policy: { id: manifest.id, version: manifest.version },
+    policy: {
+      id: manifest.id,
+      version: manifest.version,
+      ...(hostPolicy ? { manifestDigest } : {}),
+    },
     classification,
     disposition,
     reasonCodes: reasons.map((item) => item.code),

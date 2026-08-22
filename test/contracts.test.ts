@@ -91,6 +91,35 @@ test("policy rejects duplicate rule IDs and action types", () => {
   assert.equal(parsed.success, false);
 });
 
+test("policy rejects duplicate resource allowlist entries", () => {
+  const rule = {
+    id: "inspect",
+    actionType: "inspect_run_receipt" as const,
+    adapterId: "governed-automation",
+    classification: "green" as const,
+    allowedEnvironment: "read_only" as const,
+    allowedResourceIds: ["one", "one"],
+    approvalRequired: false,
+    maxApprovalLifetimeSeconds: null,
+    requiredEvidenceOutcome: null,
+    reversible: false,
+    verificationRequired: true,
+  };
+  const parsed = policyManifestSchema.safeParse({
+    schemaVersion: "governed-action-policy/v1",
+    id: "policy",
+    version: "1",
+    diagnosticFormat: "context-layer-diagnostic/v1",
+    maxEvidenceAgeSeconds: 3600,
+    rules: [
+      rule,
+      { ...rule, id: "retry", actionType: "retry_failed_lane" },
+      { ...rule, id: "delete", actionType: "delete_preserved_output" },
+    ],
+  });
+  assert.equal(parsed.success, false);
+});
+
 test("digest omission excludes only the requested digest field", () => {
   const value = { id: "x", digest: "placeholder", nested: { a: 1 } };
   assert.equal(digestOmitting(value, "digest"), sha256({ id: "x", nested: { a: 1 } }));
