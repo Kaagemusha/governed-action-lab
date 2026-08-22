@@ -22,6 +22,9 @@ const policy = JSON.parse(
   await readFile("data/policy.json", "utf8"),
 ) as PolicyManifest;
 const adapter = new SyntheticAutomationAdapter(".runtime/operator-review-test");
+const hostAdapter = Object.assign(Object.create(adapter), {
+  id: "host-heartbeat",
+}) as SyntheticAutomationAdapter;
 const clock = { now: () => new Date("2026-07-28T09:10:00Z") };
 
 test("prepares ready, approval-required, and refused reviews without execution", async () => {
@@ -67,6 +70,66 @@ test("v2 evidence remains explicit in the operator review", async () => {
   assert.equal(review.diagnostic.format, "context-layer-diagnostic/v2");
   assert.equal(review.request.evidence.diagnosticFormat, review.diagnostic.format);
   assert.equal(verifyActionReview(review).status, "APPROVAL_REQUIRED");
+});
+
+test("operator review binds an exact trusted host policy manifest", async () => {
+  const hostPolicy: PolicyManifest = {
+    ...policy,
+    id: "host-policy",
+    version: "1",
+    rules: policy.rules.map((rule) =>
+      rule.actionType === "retry_failed_lane"
+        ? {
+            ...rule,
+            adapterId: "host-heartbeat",
+            allowedEnvironment: "host_local_reversible",
+            allowedResourceIds: ["site-refresh"],
+          }
+        : rule,
+    ),
+  };
+  const policyTrust = {
+    id: hostPolicy.id,
+    version: hostPolicy.version,
+    manifestDigest: sha256(hostPolicy),
+  };
+  const review = await prepareActionReview(
+    diagnosticV2,
+    {
+      actionType: "retry_failed_lane",
+      laneId: "site-refresh",
+      adapterId: "host-heartbeat",
+      environment: "host_local_reversible",
+    },
+    hostPolicy,
+    hostAdapter,
+    clock,
+    policyTrust,
+  );
+  assert.equal(review.status, "APPROVAL_REQUIRED");
+  assert.equal(review.request.target.adapterId, "host-heartbeat");
+  assert.equal(review.request.target.environment, "host_local_reversible");
+  assert.equal(review.decision.policy.manifestDigest, policyTrust.manifestDigest);
+  assert.equal(verifyActionReview(review).id, review.id);
+});
+
+test("operator review rejects a plan from a different adapter", async () => {
+  await assert.rejects(
+    () =>
+      prepareActionReview(
+        diagnosticV2,
+        {
+          actionType: "retry_failed_lane",
+          laneId: "site-refresh",
+          adapterId: "host-heartbeat",
+          environment: "host_local_reversible",
+        },
+        policy,
+        adapter,
+        clock,
+      ),
+    /adapter does not match/,
+  );
 });
 
 test("review verification rejects a format mismatch after digest recomputation", async () => {

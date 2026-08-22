@@ -8,28 +8,42 @@ import {
   type ActionReview,
   type CatalogAction,
   type PolicyManifest,
+  type PolicyTrustBinding,
 } from "./contracts.js";
 import { proposeActionFromDiagnostic } from "./context-adapter.js";
 import { actionDigest, evaluateAction, type Clock } from "./policy.js";
 
 export async function prepareActionReview(
   diagnosticInput: unknown,
-  input: { actionType: CatalogAction["type"]; laneId: string; proposerId?: string },
+  input: {
+    actionType: CatalogAction["type"];
+    laneId: string;
+    adapterId?: string;
+    environment?: string;
+    proposerId?: string;
+  },
   policy: PolicyManifest,
   adapter: ActionAdapter,
   clock?: Clock,
+  policyTrust?: PolicyTrustBinding,
 ): Promise<ActionReview> {
   const proposal = proposeActionFromDiagnostic(diagnosticInput, {
     actionType: input.actionType,
     laneId: input.laneId,
+    ...(input.adapterId ? { adapterId: input.adapterId } : {}),
+    ...(input.environment ? { environment: input.environment } : {}),
     proposerId: input.proposerId ?? "operator-review",
     ...(clock ? { proposedAt: clock.now().toISOString() } : {}),
   });
+  if (adapter.id !== proposal.request.target.adapterId) {
+    throw new Error("Review adapter does not match the requested target adapter.");
+  }
   const decision = evaluateAction(
     proposal.request,
     policy,
     proposal.evidence,
     clock ?? { now: () => new Date(proposal.request.proposedAt) },
+    policyTrust,
   );
   const plan = await adapter.plan(proposal.request);
   const status = {

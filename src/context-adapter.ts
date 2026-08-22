@@ -13,6 +13,8 @@ import type { EvidenceEligibility } from "./policy.js";
 export type ProposalInput = {
   actionType: CatalogAction["type"];
   laneId: string;
+  adapterId?: string;
+  environment?: string;
   proposerId?: string;
   proposedAt?: string;
   idempotencyKey?: string;
@@ -132,14 +134,15 @@ export function proposeActionFromDiagnostic(
       actionType === "inspect_run_receipt"
         ? "Inspect the latest run receipt."
         : actionType === "retry_failed_lane"
-          ? "Retry the failed lane in the synthetic sandbox."
+          ? "Retry the failed lane through the selected bounded adapter."
           : "Delete the preserved local output.",
     action,
     target: {
-      adapterId: "governed-automation",
+      adapterId: input.adapterId ?? "governed-automation",
       resourceId: input.laneId,
       environment:
-        actionType === "inspect_run_receipt" ? "read_only" : "synthetic_sandbox",
+        input.environment ??
+        (actionType === "inspect_run_receipt" ? "read_only" : "synthetic_sandbox"),
     },
     evidence: {
       diagnosticFormat: diagnostic.format,
@@ -173,6 +176,8 @@ export function recheckProposal(
   const adapted = proposeActionFromDiagnostic(diagnosticInput, {
     actionType: request.action.type,
     laneId: request.action.laneId,
+    adapterId: request.target.adapterId,
+    environment: request.target.environment,
     proposerId: request.proposer.id,
     proposedAt: request.proposedAt,
     idempotencyKey: request.idempotencyKey,

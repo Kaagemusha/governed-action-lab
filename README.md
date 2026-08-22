@@ -263,8 +263,11 @@ than reimplemented.
 Dependency-injected hosts may evaluate a non-public policy only by supplying a
 trust binding that matches the policy ID, version, and canonical manifest
 digest. Rules may additionally carry an exact `allowedResourceIds` allowlist.
-Both checks fail closed; neither adds a production adapter or changes the
-bundled public policy and portable proof.
+Host policies may select the explicit `host_local_reversible` environment and
+an injected adapter ID; the policy binds both values and current-state recheck
+preserves them for the executor.
+These checks fail closed. This repository still includes no production adapter,
+and the bundled public policy and portable proof remain synthetic.
 
 ## Contracts
 

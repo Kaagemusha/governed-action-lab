@@ -236,3 +236,55 @@ test("resource allowlists reject lane substitution under an otherwise trusted po
   assert.equal(decision.disposition, "refuse");
   assert.ok(decision.reasonCodes.includes("TARGET_NOT_ALLOWED"));
 });
+
+test("host policies bind the exact host adapter and reversible environment", () => {
+  const request: ActionRequest = {
+    ...base,
+    action: {
+      type: "retry_failed_lane",
+      laneId: "site-refresh",
+      recordId: "receipt",
+      retryPayloadHash: hash,
+      simulateFailure: "none",
+    },
+    target: {
+      adapterId: "host-heartbeat",
+      resourceId: "site-refresh",
+      environment: "host_local_reversible",
+    },
+  };
+  const hostPolicy: PolicyManifest = {
+    ...policy,
+    id: "host-policy",
+    version: "1",
+    rules: policy.rules.map((rule) =>
+      rule.actionType === "retry_failed_lane"
+        ? {
+            ...rule,
+            adapterId: "host-heartbeat",
+            allowedEnvironment: "host_local_reversible",
+            allowedResourceIds: ["site-refresh"],
+          }
+        : rule,
+    ),
+  };
+  const trust = {
+    id: hostPolicy.id,
+    version: hostPolicy.version,
+    manifestDigest: sha256(hostPolicy),
+  };
+  assert.equal(
+    evaluateAction(request, hostPolicy, eligible, clock, trust).disposition,
+    "approval_required",
+  );
+  for (const target of [
+    { ...request.target, adapterId: "other-adapter" },
+    { ...request.target, environment: "synthetic_sandbox" },
+  ]) {
+    assert.equal(
+      evaluateAction({ ...request, target }, hostPolicy, eligible, clock, trust)
+        .disposition,
+      "refuse",
+    );
+  }
+});

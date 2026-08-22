@@ -234,7 +234,9 @@ export const policyRuleSchema = z
     ]),
     adapterId: id.nullable(),
     classification: z.enum(["green", "yellow", "red"]),
-    allowedEnvironment: z.enum(["read_only", "synthetic_sandbox"]).nullable(),
+    allowedEnvironment: z
+      .enum(["read_only", "synthetic_sandbox", "host_local_reversible"])
+      .nullable(),
     allowedResourceIds: z.array(id).min(1).optional(),
     approvalRequired: z.boolean(),
     maxApprovalLifetimeSeconds: z.number().int().positive().nullable(),
