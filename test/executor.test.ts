@@ -7,6 +7,7 @@ import test from "node:test";
 
 import { MemoryApprovalStore, OperatorApprovalProvider } from "../src/approval.js";
 import { SyntheticAutomationAdapter } from "../src/adapters/synthetic-automation.js";
+import { sha256 } from "../src/canonical.js";
 import {
   actionRequestSchema,
   type ActionRequest,
@@ -458,4 +459,92 @@ test("executor accepts a deterministic receipt ID factory without changing the r
     clock,
   });
   assert.match(defaultReceipt.id, /^receipt-[0-9a-f-]{36}$/);
+});
+
+test("executor rechecks a digest-pinned host policy before executing", async () => {
+  const action = request();
+  const hostPolicy: PolicyManifest = {
+    ...policy,
+    id: "host-policy",
+    version: "1",
+    rules: policy.rules.map((rule) => ({
+      ...rule,
+      allowedResourceIds: ["site-refresh"],
+    })),
+  };
+  const policyTrust = {
+    id: hostPolicy.id,
+    version: hostPolicy.version,
+    manifestDigest: sha256(hostPolicy),
+  };
+  const state = await setup(action);
+  const decision = evaluateAction(action, hostPolicy, evidence, clock, policyTrust);
+  await new OperatorApprovalProvider(state.approvals, clock).issue(
+    action,
+    decision,
+    "operator",
+    true,
+  );
+  const receipt = await executeGovernedAction(action, decision, {
+    ...state,
+    policy: hostPolicy,
+    policyTrust,
+    evidence,
+    clock,
+  });
+  assert.equal(receipt.result, "succeeded");
+  assert.equal(state.adapter.executeCalls, 1);
+
+  const replacedAction = {
+    ...action,
+    id: "request-host-policy-replaced",
+    idempotencyKey: "host-policy-replaced",
+  };
+  const replacedPolicy = {
+    ...hostPolicy,
+    maxEvidenceAgeSeconds: hostPolicy.maxEvidenceAgeSeconds + 1,
+  };
+  const replacedTrust = {
+    ...policyTrust,
+    manifestDigest: sha256(replacedPolicy),
+  };
+  const replacedState = await setup(replacedAction);
+  const originalDecision = evaluateAction(
+    replacedAction,
+    hostPolicy,
+    evidence,
+    clock,
+    policyTrust,
+  );
+  const stale = await executeGovernedAction(replacedAction, originalDecision, {
+    ...replacedState,
+    policy: replacedPolicy,
+    policyTrust: replacedTrust,
+    evidence,
+    clock,
+  });
+  assert.equal(stale.result, "stale");
+  assert.equal(replacedState.adapter.executeCalls, 0);
+
+  const omittedAction = {
+    ...action,
+    id: "request-host-policy-without-trust",
+    idempotencyKey: "host-policy-without-trust",
+  };
+  const omittedState = await setup(omittedAction);
+  const omittedDecision = evaluateAction(
+    omittedAction,
+    hostPolicy,
+    evidence,
+    clock,
+    policyTrust,
+  );
+  const refused = await executeGovernedAction(omittedAction, omittedDecision, {
+    ...omittedState,
+    policy: hostPolicy,
+    evidence,
+    clock,
+  });
+  assert.equal(refused.result, "refused");
+  assert.equal(omittedState.adapter.executeCalls, 0);
 });

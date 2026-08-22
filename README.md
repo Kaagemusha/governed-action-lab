@@ -260,6 +260,12 @@ executor, sandbox adapter, stores, CLI, MCP server, and browser are separate
 layers. Browser decisions are compiled from the same core policy code rather
 than reimplemented.
 
+Dependency-injected hosts may evaluate a non-public policy only by supplying a
+trust binding that matches the policy ID, version, and canonical manifest
+digest. Rules may additionally carry an exact `allowedResourceIds` allowlist.
+Both checks fail closed; neither adds a production adapter or changes the
+bundled public policy and portable proof.
+
 ## Contracts
 
 Strict Zod schemas reject unknown keys at persisted and transport boundaries:
