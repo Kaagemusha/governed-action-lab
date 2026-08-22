@@ -15,7 +15,13 @@ import { actionDigest, evaluateAction, type Clock } from "./policy.js";
 
 export async function prepareActionReview(
   diagnosticInput: unknown,
-  input: { actionType: CatalogAction["type"]; laneId: string; proposerId?: string },
+  input: {
+    actionType: CatalogAction["type"];
+    laneId: string;
+    adapterId?: string;
+    environment?: string;
+    proposerId?: string;
+  },
   policy: PolicyManifest,
   adapter: ActionAdapter,
   clock?: Clock,
@@ -24,9 +30,14 @@ export async function prepareActionReview(
   const proposal = proposeActionFromDiagnostic(diagnosticInput, {
     actionType: input.actionType,
     laneId: input.laneId,
+    ...(input.adapterId ? { adapterId: input.adapterId } : {}),
+    ...(input.environment ? { environment: input.environment } : {}),
     proposerId: input.proposerId ?? "operator-review",
     ...(clock ? { proposedAt: clock.now().toISOString() } : {}),
   });
+  if (adapter.id !== proposal.request.target.adapterId) {
+    throw new Error("Review adapter does not match the requested target adapter.");
+  }
   const decision = evaluateAction(
     proposal.request,
     policy,

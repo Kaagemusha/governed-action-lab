@@ -203,3 +203,18 @@ test("recheck binds the executable action to the exact diagnostic evidence", () 
     /no longer matches/,
   );
 });
+
+test("host target overrides survive proposal and exact recheck", () => {
+  const proposal = proposeActionFromDiagnostic(v2Fixture, {
+    actionType: "retry_failed_lane",
+    laneId: "site-refresh",
+    adapterId: "host-heartbeat",
+    environment: "host_local_reversible",
+  });
+  assert.deepEqual(proposal.request.target, {
+    adapterId: "host-heartbeat",
+    resourceId: "site-refresh",
+    environment: "host_local_reversible",
+  });
+  assert.doesNotThrow(() => recheckProposal(v2Fixture, proposal.request));
+});
