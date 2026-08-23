@@ -9,6 +9,8 @@ import {
 import type { ActionAdapter, AdapterEffect } from "./adapters/synthetic-automation.js";
 
 export function createReceipt(input: {
+  actionId: string;
+  parentActionId?: string;
   request: ActionRequest;
   decision: PolicyDecision;
   approvalId: string | null;
@@ -25,6 +27,8 @@ export function createReceipt(input: {
   const partial = {
     schemaVersion: RECEIPT_VERSION,
     id: receiptIdFactory(),
+    actionId: input.actionId,
+    ...(input.parentActionId === undefined ? {} : { parentActionId: input.parentActionId }),
     requestId: input.request.id,
     actionDigest: input.decision.actionDigest,
     decisionDigest: input.decision.decisionDigest,

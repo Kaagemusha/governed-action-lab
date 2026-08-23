@@ -34,7 +34,7 @@ test("CLI verifies a portable proof without replaying its contents", async (cont
   const result = JSON.parse(await readFile(output, "utf8"));
   assert.deepEqual(Object.keys(result).sort(), ["mode", "packetDigest", "schemaVersion", "valid"]);
   assert.equal(result.valid, true);
-  assert.equal(result.schemaVersion, "governed-action-proof/v1");
+  assert.equal(result.schemaVersion, "governed-action-proof/v2");
   assert.equal(result.mode, "synthetic_green_inspection");
   assert.match(result.packetDigest, /^[a-f0-9]{64}$/);
 });

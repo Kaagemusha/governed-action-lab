@@ -87,6 +87,17 @@ The lab does not defend:
 The expected-non-defense tests make the composition and receipt-collection limits
 executable without adding a production adapter or network access.
 
+## Provenance recording is not enforcement
+
+Execution receipts carry a runtime-assigned `actionId` and, only when the
+trusted runtime has direct structural knowledge of it, an optional
+`parentActionId`. These fields let an operator reconstruct which governed
+action led to another governed action. They are evidentiary, not preventive:
+the gate does not verify that child authority was derived from or bounded by a
+parent grant, and a `parentActionId` is not evidence that any such bound
+existed. The composition non-goal above remains open; this records attribution
+without claiming enforced delegation.
+
 ## Assurance limits
 
 Passing tests establish deterministic correctness for the inputs and trust

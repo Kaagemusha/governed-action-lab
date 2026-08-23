@@ -31,6 +31,8 @@ export type ExecutorDependencies = {
   receipts: ReceiptStore;
   verifiedPrincipal: ActionRequest["proposer"];
   clock?: Clock;
+  actionIdFactory?: () => string;
+  parentActionId?: string;
   receiptIdFactory?: () => string;
 };
 
@@ -82,6 +84,8 @@ export async function executeGovernedAction(
   if (claim.status === "in_progress") {
     throw new IdempotencyStateError("IDEMPOTENCY_IN_PROGRESS", request.idempotencyKey);
   }
+  const actionId = (dependencies.actionIdFactory ??
+    (() => `action-${globalThis.crypto.randomUUID()}`))();
 
   const executeClaimed = async (): Promise<ExecutionReceipt> => {
   const clock = dependencies.clock ?? systemClock;
@@ -113,6 +117,10 @@ export async function executeGovernedAction(
     options: Partial<Parameters<typeof createReceipt>[0]> = {},
   ): Promise<ExecutionReceipt> => {
     const receipt = createReceipt({
+      actionId,
+      ...(dependencies.parentActionId === undefined
+        ? {}
+        : { parentActionId: dependencies.parentActionId }),
       request,
       decision,
       approvalId: null,

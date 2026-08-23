@@ -101,7 +101,7 @@ function validatePortableProof(content, findings) {
     if (!condition) findings.add(`docs/governed-action-proof.json: ${message}`);
   };
   fail(sameKeys(packet, ["schemaVersion", "mode", "synthetic", "diagnosticSource", "diagnostic", "policy", "review", "approvalBoundary", "receipt", "packetDigest"]), "portable proof has an unexpected top-level shape");
-  fail(packet.schemaVersion === "governed-action-proof/v1", "unexpected proof schema");
+  fail(packet.schemaVersion === "governed-action-proof/v2", "unexpected proof schema");
   fail(packet.mode === "synthetic_green_inspection" && packet.synthetic === true, "proof is not explicitly synthetic green inspection");
   fail(sameKeys(packet.diagnosticSource, ["producer", "producerCommit", "producerArtifact", "format", "fixtureSha256", "diagnosticCanonicalSha256"]), "diagnostic source has an unexpected shape");
   fail(packet.diagnosticSource?.producer === "Kaagemusha/context-layer-lab", "unexpected diagnostic producer");
@@ -118,7 +118,7 @@ function validatePortableProof(content, findings) {
   fail(packet.review?.request?.target?.environment === "read_only", "proof target is not read-only");
   fail(packet.review?.request?.proposedAt === "2026-07-28T09:10:00.000Z" && packet.review?.decision?.decisionAt === "2026-07-28T09:10:00.000Z", "review times are not frozen");
   fail(sameKeys(packet.approvalBoundary, ["required", "grant"]) && packet.approvalBoundary.required === false && packet.approvalBoundary.grant === null, "proof carries an approval boundary");
-  fail(packet.receipt?.schemaVersion === "governed-action-receipt/v1" && packet.receipt?.result === "succeeded", "receipt is not a successful v1 receipt");
+  fail(packet.receipt?.schemaVersion === "governed-action-receipt/v2" && packet.receipt?.result === "succeeded", "receipt is not a successful v2 receipt");
   fail(packet.receipt?.approvalId === null, "receipt carries an approval");
   fail(packet.receipt?.startedAt === "2026-07-28T09:10:00.000Z" && packet.receipt?.endedAt === "2026-07-28T09:10:00.000Z", "receipt times are not frozen");
   fail(packet.receipt?.effects?.length === 1 && packet.receipt.effects[0]?.kind === "read" && packet.receipt.effects[0]?.beforeHash === packet.receipt.effects[0]?.afterHash, "receipt is not a single read-only effect");

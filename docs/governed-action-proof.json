@@ -1,5 +1,5 @@
 {
-  "schemaVersion": "governed-action-proof/v1",
+  "schemaVersion": "governed-action-proof/v2",
   "mode": "synthetic_green_inspection",
   "synthetic": true,
   "diagnosticSource": {
@@ -428,8 +428,9 @@
     "grant": null
   },
   "receipt": {
-    "schemaVersion": "governed-action-receipt/v1",
+    "schemaVersion": "governed-action-receipt/v2",
     "id": "receipt-portable-green-v2",
+    "actionId": "action-portable-green-v1",
     "requestId": "request-55829d90d51c1359",
     "actionDigest": "655c01b8e1661a148d8cc2c9b0ff5cabd3b91179e0b8a893f7fb451f91504866",
     "decisionDigest": "5ef48874843a4b925a94ad1f984e91e0273547183949b566b9a8a8cf5031972f",
@@ -464,7 +465,7 @@
       "result": "not_needed"
     },
     "previousReceiptId": null,
-    "receiptDigest": "929801c06b854cbf31aef90dd730bbd7eb7b1f19509fb2def2fb351290951d9e"
+    "receiptDigest": "df45f146caed5d465bd015cc5901d1b38eb6ee7f011e177b00719e8e139fca33"
   },
-  "packetDigest": "3ecc78e47aac4b4ba8217ea006c466c334bbda3498ea2edeb0f68e94273eecd3"
+  "packetDigest": "62ae6ea25afc11e28e5ec01d686cc714c0637926126809fb5d07ef3aeb3e167a"
 }

@@ -43,8 +43,11 @@ test("EXPECTED NON-DEFENSE: authorized read then synthetic-sink send can compose
     receipts,
     verifiedPrincipal: inspect.request.proposer,
     clock,
+    actionIdFactory: () => "action-inspect-site-refresh",
   });
   assert.equal(readReceipt.result, "succeeded");
+  assert.equal(readReceipt.actionId, "action-inspect-site-refresh");
+  assert.equal(readReceipt.parentActionId, undefined);
   assert.equal(readReceipt.effects[0]?.resourceId, "site-refresh");
 
   // The temporary retry record is the test-only synthetic sink analogue. There
@@ -84,9 +87,13 @@ test("EXPECTED NON-DEFENSE: authorized read then synthetic-sink send can compose
     receipts,
     verifiedPrincipal: sendRequest.proposer,
     clock,
+    actionIdFactory: () => "action-retry-site-refresh",
+    parentActionId: readReceipt.actionId,
   });
 
   assert.equal(sendReceipt.result, "succeeded");
+  assert.equal(sendReceipt.actionId, "action-retry-site-refresh");
+  assert.equal(sendReceipt.parentActionId, readReceipt.actionId);
   assert.match(
     await readFile(adapter.retryPath, "utf8"),
     new RegExp(`"payloadHash": "${readReceipt.receiptDigest}"`),

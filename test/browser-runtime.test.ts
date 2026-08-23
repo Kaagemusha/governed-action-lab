@@ -71,6 +71,8 @@ test("browser exports strict verifiable green and yellow receipts", () => {
     });
     assert.equal(receipt.preconditionCheck.passed, true);
     assert.equal(receipt.previousReceiptId, null);
+    assert.match(receipt.actionId, /^browser-action-/);
+    assert.equal(receipt.parentActionId, undefined);
     assert.equal("note" in receipt, false);
   }
   assert.equal(read.approvalId, null);

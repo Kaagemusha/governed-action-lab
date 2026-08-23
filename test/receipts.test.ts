@@ -25,7 +25,7 @@ test("receipt verifier detects content mutation, field deletion, and field inser
   assert.equal(verifyReceipt({ ...first, result: "failed" }).valid, false);
 
   const deleted = structuredClone(first) as Partial<ExecutionReceipt>;
-  delete deleted.verification;
+  delete deleted.actionId;
   assert.equal(verifyReceipt(deleted).valid, false);
 
   assert.equal(verifyReceipt({ ...first, unexpected: true }).valid, false);

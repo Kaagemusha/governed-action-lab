@@ -3,13 +3,13 @@ import { z } from "zod";
 export const REQUEST_VERSION = "governed-action-request/v1";
 export const DECISION_VERSION = "governed-action-decision/v1";
 export const APPROVAL_VERSION = "governed-action-approval/v1";
-export const RECEIPT_VERSION = "governed-action-receipt/v1";
+export const RECEIPT_VERSION = "governed-action-receipt/v2";
 export const POLICY_VERSION = "governed-action-policy/v1";
 export const DIAGNOSTIC_VERSION = "context-layer-diagnostic/v1";
 export const DIAGNOSTIC_V2_VERSION = "context-layer-diagnostic/v2";
 export const REVIEW_VERSION = "governed-action-review/v1";
 export const REVIEW_V2_VERSION = "governed-action-review/v2";
-export const PROOF_VERSION = "governed-action-proof/v1";
+export const PROOF_VERSION = "governed-action-proof/v2";
 
 const id = z.string().min(1);
 const digest = z.string().regex(/^[a-f0-9]{64}$/);
@@ -200,6 +200,8 @@ export const executionReceiptSchema = z
   .object({
     schemaVersion: z.literal(RECEIPT_VERSION),
     id,
+    actionId: id,
+    parentActionId: id.optional(),
     requestId: id,
     actionDigest: digest,
     decisionDigest: digest,

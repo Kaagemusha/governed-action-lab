@@ -103,6 +103,7 @@ export async function buildPortableGreenProof(input: {
     receipts: new MemoryReceiptStore(),
     verifiedPrincipal: review.request.proposer,
     clock,
+    actionIdFactory: () => "action-portable-green-v1",
     receiptIdFactory: () => PORTABLE_PROOF_RECEIPT_ID,
   });
   const partial = {
@@ -157,6 +158,8 @@ export async function verifyPortableProof(input: unknown): Promise<ProofPacket> 
   const receipt = packet.receipt;
   invariant(verifyReceipt(receipt).valid, "receipt schema or digest is invalid");
   invariant(receipt.id === PORTABLE_PROOF_RECEIPT_ID, "receipt identity is not deterministic");
+  invariant(receipt.actionId === "action-portable-green-v1", "runtime action identity is not deterministic");
+  invariant(receipt.parentActionId === undefined, "portable proof must not claim a parent action");
   invariant(receipt.requestId === packet.review.request.id, "receipt is not bound to the request");
   invariant(receipt.actionDigest === actionDigest(packet.review.request), "receipt action digest is incorrect");
   invariant(receipt.decisionDigest === packet.review.decision.decisionDigest, "receipt is not bound to the decision");

@@ -278,7 +278,7 @@ Strict Zod schemas reject unknown keys at persisted and transport boundaries:
 - `governed-action-request/v1`
 - `governed-action-decision/v1`
 - `governed-action-approval/v1`
-- `governed-action-receipt/v1`
+- `governed-action-receipt/v2`
 - `governed-action-policy/v1`
 - dual-read consumer for `context-layer-diagnostic/v1` and evidence-bound `v2`
 
@@ -287,7 +287,10 @@ SHA-256 hashing. An approval binds both the complete request digest and the
 decision digest. The executor also requires an exact match to a host-supplied
 verified principal; the bundled CLI and MCP server use a fixed synthetic identity
 and do not provide authentication. Receipts describe bounded resources and
-before/after hashes.
+before/after hashes. Each receipt also carries a runtime-assigned `actionId`
+and may carry a `parentActionId` when the trusted runtime directly knows the
+structural parent. That correlation is an audit trail, not delegation
+authorization or proof that child authority was attenuated from a parent.
 Before execution, each idempotency key is atomically and permanently bound to
 the complete action digest. A concurrent duplicate reports in-progress, a
 different action reports a conflict, and any receipt with effects is replayed

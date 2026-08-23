@@ -65,6 +65,11 @@ export function buildSyntheticBrowserReceipt(
       kind,
       afterHash,
     }).slice(0, 20)}`,
+    actionId: `browser-action-${sha256({
+      requestId: item.request.id,
+      decisionDigest: item.decision.decisionDigest,
+      kind,
+    }).slice(0, 20)}`,
     requestId: item.request.id,
     actionDigest: item.decision.actionDigest,
     decisionDigest: item.decision.decisionDigest,
