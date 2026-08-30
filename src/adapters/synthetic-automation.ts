@@ -17,11 +17,23 @@ export type AdapterExecution = {
   detail: string;
 };
 
+export type AdapterRecoveryState = {
+  before: string;
+  intended: string;
+};
+
+export type AdapterReconciliation =
+  | { status: "not_applied" }
+  | { status: "applied"; execution: AdapterExecution }
+  | { status: "ambiguous"; detail: string };
+
 export interface ActionAdapter {
   id: string;
   version: string;
   inspect(request: ActionRequest): Promise<AdapterExecution>;
   plan(request: ActionRequest): Promise<{ effect: string; reversible: boolean }>;
+  prepareRecovery(request: ActionRequest): Promise<AdapterRecoveryState>;
+  reconcile(request: ActionRequest, state: AdapterRecoveryState): Promise<AdapterReconciliation>;
   execute(request: ActionRequest): Promise<AdapterExecution>;
   verify(request: ActionRequest, execution: AdapterExecution): Promise<{ passed: boolean; detail: string }>;
   compensate(request: ActionRequest, execution: AdapterExecution): Promise<{ passed: boolean; detail: string }>;
@@ -56,6 +68,52 @@ export class SyntheticAutomationAdapter implements ActionAdapter {
     };
   }
 
+  private intendedContent(request: ActionRequest): string {
+    if (request.action.type !== "retry_failed_lane") {
+      throw new Error("Synthetic recovery accepts only retry_failed_lane mutations.");
+    }
+    return `${JSON.stringify({
+      laneId: request.action.laneId,
+      evidenceRecordId: request.action.recordId,
+      payloadHash: request.action.retryPayloadHash,
+    }, null, 2)}\n`;
+  }
+
+  async prepareRecovery(request: ActionRequest): Promise<AdapterRecoveryState> {
+    return {
+      before: await readFile(this.retryPath, "utf8").catch(() => ""),
+      intended: this.intendedContent(request),
+    };
+  }
+
+  async reconcile(
+    request: ActionRequest,
+    state: AdapterRecoveryState,
+  ): Promise<AdapterReconciliation> {
+    const intended = this.intendedContent(request);
+    if (state.intended !== intended) {
+      return { status: "ambiguous", detail: "Recovery checkpoint does not match the requested effect." };
+    }
+    const current = await readFile(this.retryPath, "utf8").catch(() => "");
+    if (current === state.before) return { status: "not_applied" };
+    if (current !== intended) {
+      return { status: "ambiguous", detail: "Sandbox state matches neither the checkpoint nor the intended effect." };
+    }
+    return {
+      status: "applied",
+      execution: {
+        effects: [{
+          kind: "create_retry_record",
+          resourceId: request.target.resourceId,
+          beforeHash: sha256(state.before),
+          afterHash: sha256(intended),
+        }],
+        snapshot: state.before,
+        detail: "Synthetic retry record recovered from durable checkpoint.",
+      },
+    };
+  }
+
   async execute(request: ActionRequest): Promise<AdapterExecution> {
     if (request.action.type !== "retry_failed_lane") {
       throw new Error("Synthetic executor accepts only retry_failed_lane mutations.");
@@ -66,11 +124,7 @@ export class SyntheticAutomationAdapter implements ActionAdapter {
     }
     await mkdir(this.sandboxDirectory, { recursive: true });
     const before = await readFile(this.retryPath, "utf8").catch(() => "");
-    const content = `${JSON.stringify({
-      laneId: request.action.laneId,
-      evidenceRecordId: request.action.recordId,
-      payloadHash: request.action.retryPayloadHash,
-    }, null, 2)}\n`;
+    const content = this.intendedContent(request);
     await writeFile(this.retryPath, content);
     const execution: AdapterExecution = {
       effects: [{
