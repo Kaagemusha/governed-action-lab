@@ -152,6 +152,18 @@ export async function validateAndConsumeApproval(
   decisionInput: unknown,
   clock: Clock = systemClock,
 ): Promise<ApprovalValidation> {
+  const validation = await validateApproval(store, requestInput, decisionInput, clock);
+  if (!validation.valid) return validation;
+  if (!store || !(await store.consume(validation.grant))) return { valid: false, code: "replayed" };
+  return validation;
+}
+
+export async function validateApproval(
+  store: ApprovalStore | null,
+  requestInput: unknown,
+  decisionInput: unknown,
+  clock: Clock = systemClock,
+): Promise<ApprovalValidation> {
   const request = actionRequestSchema.parse(requestInput);
   const decision = policyDecisionSchema.parse(decisionInput);
   if (!store) return { valid: false, code: "missing" };
@@ -167,6 +179,5 @@ export async function validateAndConsumeApproval(
   if (new Date(grant.expiresAt).getTime() <= clock.now().getTime()) {
     return { valid: false, code: "expired" };
   }
-  if (!(await store.consume(grant))) return { valid: false, code: "replayed" };
   return { valid: true, grant };
 }

@@ -80,12 +80,29 @@ The lab does not defend:
 - multi-hop delegation or transitive authority;
 - budgets, quotas, or rate limits;
 - host, runtime, adapter, policy, clock, or store compromise;
+- distributed or multi-host recovery from a shared receipt store;
 - false but well-formed external evidence;
 - production identity, authorization, networking, credentials, account changes,
   communications, finance, deployment, deletion, or other external effects.
 
 The expected-non-defense tests make the composition and receipt-collection limits
 executable without adding a production adapter or network access.
+
+## Local crash recovery boundary
+
+The file-backed synthetic executor does not unlock claims because they are old.
+It records a digest-bound recovery checkpoint before the effect, requires the
+operating system to report no live process with the recorded PID, and requires the synthetic adapter to
+reconcile current state with both the pre-effect snapshot and intended content.
+Only exact `not_applied` or `applied` states continue; a mismatch remains
+claimed and requires inspection. The recovery lock is itself owner-tagged so a
+process death during takeover can be retried safely.
+
+PID liveness is meaningful only for the trusted single host in this repository's
+declared synthetic boundary. PID reuse can produce a conservative false
+positive that leaves a dead claim blocked; it never permits unsafe takeover.
+A shared or remote store needs a real fencing or lease authority and is
+intentionally unsupported.
 
 ## Provenance recording is not enforcement
 

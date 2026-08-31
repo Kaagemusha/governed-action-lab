@@ -1,5 +1,5 @@
 import type { ApprovalStore } from "./approval.js";
-import { validateAndConsumeApproval } from "./approval.js";
+import { validateApproval } from "./approval.js";
 import type { ActionAdapter, AdapterExecution } from "./adapters/synthetic-automation.js";
 import {
   actionRequestSchema,
@@ -13,7 +13,7 @@ import {
 import { digestOmitting } from "./canonical.js";
 import { actionDigest, evaluateAction, type Clock, type EvidenceEligibility, systemClock } from "./policy.js";
 import { createReceipt } from "./receipts.js";
-import type { ReceiptStore } from "./store.js";
+import type { ClaimCheckpoint, ReceiptStore } from "./store.js";
 
 export type ExecutionState = {
   evidence: EvidenceEligibility;
@@ -38,13 +38,15 @@ export type ExecutorDependencies = {
 
 export class IdempotencyStateError extends Error {
   constructor(
-    readonly code: "IDEMPOTENCY_CONFLICT" | "IDEMPOTENCY_IN_PROGRESS",
+    readonly code: "IDEMPOTENCY_CONFLICT" | "IDEMPOTENCY_IN_PROGRESS" | "IDEMPOTENCY_RECOVERY_AMBIGUOUS",
     idempotencyKey: string,
   ) {
     super(
       code === "IDEMPOTENCY_CONFLICT"
         ? `Idempotency key "${idempotencyKey}" is already bound to another action.`
-        : `Idempotency key "${idempotencyKey}" is already executing.`,
+        : code === "IDEMPOTENCY_IN_PROGRESS"
+          ? `Idempotency key "${idempotencyKey}" is already executing.`
+          : `Idempotency key "${idempotencyKey}" has an orphaned effect that cannot be reconciled safely.`,
     );
     this.name = "IdempotencyStateError";
   }
@@ -84,12 +86,31 @@ export async function executeGovernedAction(
   if (claim.status === "in_progress") {
     throw new IdempotencyStateError("IDEMPOTENCY_IN_PROGRESS", request.idempotencyKey);
   }
-  const actionId = (dependencies.actionIdFactory ??
+  let claimId: string;
+  let recoveryCheckpoint: ClaimCheckpoint | null = null;
+  let recovered = false;
+  if (claim.status === "orphaned") {
+    const recovery = await dependencies.receipts.recoverOrphaned(
+      request.idempotencyKey,
+      requestActionDigest,
+      claim.claimId,
+    );
+    if (!recovery) {
+      throw new IdempotencyStateError("IDEMPOTENCY_IN_PROGRESS", request.idempotencyKey);
+    }
+    claimId = recovery.claimId;
+    recoveryCheckpoint = recovery.checkpoint;
+    recovered = true;
+  } else {
+    claimId = claim.claimId;
+  }
+  const actionId = recoveryCheckpoint?.actionId ?? (dependencies.actionIdFactory ??
     (() => `action-${globalThis.crypto.randomUUID()}`))();
+  let preserveClaim = recoveryCheckpoint !== null;
 
   const executeClaimed = async (): Promise<ExecutionReceipt> => {
   const clock = dependencies.clock ?? systemClock;
-  const startedAt = clock.now().toISOString();
+  const startedAt = recoveryCheckpoint?.startedAt ?? clock.now().toISOString();
   const current = await dependencies.loadCurrentState();
   const currentDecision = evaluateAction(
     request,
@@ -135,6 +156,49 @@ export async function executeGovernedAction(
     return receipt;
   };
 
+  let recoveredExecution: AdapterExecution | undefined;
+  if (recovered && recoveryCheckpoint) {
+    if (!dependencies.approvals) {
+      throw new IdempotencyStateError(
+        "IDEMPOTENCY_RECOVERY_AMBIGUOUS",
+        request.idempotencyKey,
+      );
+    }
+    if (dependencies.adapter.id !== request.target.adapterId) {
+      throw new IdempotencyStateError(
+        "IDEMPOTENCY_RECOVERY_AMBIGUOUS",
+        request.idempotencyKey,
+      );
+    }
+    const reconciliation = await dependencies.adapter.reconcile(
+      request,
+      recoveryCheckpoint.adapterState,
+    );
+    if (reconciliation.status === "ambiguous") {
+      throw new IdempotencyStateError(
+        "IDEMPOTENCY_RECOVERY_AMBIGUOUS",
+        request.idempotencyKey,
+      );
+    }
+    if (reconciliation.status === "applied") {
+      recoveredExecution = reconciliation.execution;
+      const verification = await dependencies.adapter.verify(request, recoveredExecution);
+      await dependencies.approvals.consume(recoveryCheckpoint.approval);
+      return finish(verification.passed ? "succeeded" : "failed", "Recovered an orphaned synthetic effect from its durable checkpoint.", {
+        approvalId: recoveryCheckpoint.approval.id,
+        effects: recoveredExecution.effects,
+        verification,
+        precondition: { passed: true, detail: "The durable checkpoint and current synthetic effect reconcile exactly." },
+        compensation: {
+          supported: true,
+          authorized: recoveryCheckpoint.approval.failureCompensationAuthorized,
+          attempted: false,
+          result: "not_needed",
+        },
+      });
+    }
+  }
+
   if (currentDecision.disposition === "refuse") {
     return finish("refused", "Policy refused the action before adapter execution.");
   }
@@ -148,17 +212,47 @@ export async function executeGovernedAction(
   let approvalId: string | null = null;
   let compensationAuthorized = false;
   if (currentDecision.classification === "yellow") {
-    const approval = await validateAndConsumeApproval(
-      dependencies.approvals,
-      request,
-      currentDecision,
-      clock,
-    );
-    if (!approval.valid) {
-      return finish(approval.code === "expired" ? "expired" : "refused", `Approval validation failed: ${approval.code}.`);
+    if (recoveryCheckpoint) {
+      approvalId = recoveryCheckpoint.approval.id;
+      compensationAuthorized = recoveryCheckpoint.approval.failureCompensationAuthorized;
+      if (!dependencies.approvals) {
+        throw new IdempotencyStateError(
+          "IDEMPOTENCY_RECOVERY_AMBIGUOUS",
+          request.idempotencyKey,
+        );
+      }
+      await dependencies.approvals.consume(recoveryCheckpoint.approval);
+    } else {
+      const approval = await validateApproval(
+        dependencies.approvals,
+        request,
+        currentDecision,
+        clock,
+      );
+      if (!approval.valid) {
+        return finish(approval.code === "expired" ? "expired" : "refused", `Approval validation failed: ${approval.code}.`);
+      }
+      const adapterState = await dependencies.adapter.prepareRecovery(request);
+      const checkpoint: ClaimCheckpoint = {
+        actionId,
+        startedAt,
+        approval: approval.grant,
+        adapterState,
+      };
+      await dependencies.receipts.checkpoint(
+        request.idempotencyKey,
+        requestActionDigest,
+        claimId,
+        checkpoint,
+      );
+      preserveClaim = true;
+      if (!dependencies.approvals || !(await dependencies.approvals.consume(approval.grant))) {
+        return finish("refused", "Approval validation failed: replayed.");
+      }
+      recoveryCheckpoint = checkpoint;
+      approvalId = approval.grant.id;
+      compensationAuthorized = approval.grant.failureCompensationAuthorized;
     }
-    approvalId = approval.grant.id;
-    compensationAuthorized = approval.grant.failureCompensationAuthorized;
   }
 
   if (currentDecision.classification === "green") {
@@ -174,7 +268,7 @@ export async function executeGovernedAction(
 
   let execution: AdapterExecution | undefined;
   try {
-    execution = await dependencies.adapter.execute(request);
+    execution = recoveredExecution ?? await dependencies.adapter.execute(request);
     const verification = await dependencies.adapter.verify(request, execution);
     if (!verification.passed && compensationAuthorized) {
       try {
@@ -251,10 +345,12 @@ export async function executeGovernedAction(
   try {
     return await executeClaimed();
   } catch (error) {
-    await dependencies.receipts.release(
-      request.idempotencyKey,
-      requestActionDigest,
-    );
+    if (!preserveClaim) {
+      await dependencies.receipts.release(
+        request.idempotencyKey,
+        requestActionDigest,
+      );
+    }
     throw error;
   }
 }

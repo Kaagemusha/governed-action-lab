@@ -297,6 +297,17 @@ different action reports a conflict, and any receipt with effects is replayed
 rather than executed again. A same-action refusal with no effects may be
 retried after its missing precondition is supplied.
 
+The file-backed synthetic path also checkpoints the exact approval, action ID,
+start time, and adapter recovery state before mutation. If that local process
+dies, a later run may take over only after the operating system reports that no
+process has the recorded PID. The adapter must then reconcile the checkpoint against the
+current sandbox: an absent effect is executed once, an exact present effect is
+recorded without executing again, and any third state remains blocked. There is
+no age-based claim expiry. This is deliberately a single-host synthetic crash
+recovery demonstration, not a distributed lease protocol. PID reuse can
+conservatively leave a dead claim blocked; it cannot authorize takeover or a
+duplicate effect.
+
 Bundled policy `1.3.0` makes diagnostic v2 the public default and explicitly
 retains v1 as a compatible evidence format. Policy `1.2.0` was the dual-read,
 v1-default transition; legacy policy `1.1.0` remains v1-only. Changing the
@@ -333,8 +344,8 @@ structured output with explicit expected output. Coverage includes:
 - evidence expiry, missing evidence, invalid quality, contradictory
   assessments, and newer success before retry;
 - exact replay, concurrent and cross-action idempotency conflicts, failures
-  before and after effect, compensation, verification mismatch, and tampered
-  receipts;
+  and process death before and after effect, ambiguous orphan recovery,
+  compensation, verification mismatch, and tampered receipts;
 - absent approval providers, MCP capability limits, forged browser decisions,
   generated-demo drift, policy change after approval, review-only preparation,
   and review-packet tampering.

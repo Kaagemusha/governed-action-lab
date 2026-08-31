@@ -2,16 +2,35 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-import { executionReceiptSchema, type ExecutionReceipt } from "./contracts.js";
+import { executionReceiptSchema, type ApprovalGrant, type ExecutionReceipt } from "./contracts.js";
 
 export type IdempotencyClaim =
-  | { status: "claimed" }
+  | { status: "claimed"; claimId: string }
   | { status: "replay"; receipt: ExecutionReceipt }
   | { status: "conflict" }
-  | { status: "in_progress" };
+  | { status: "in_progress" }
+  | { status: "orphaned"; claimId: string; checkpoint: ClaimCheckpoint | null };
+
+export type ClaimCheckpoint = {
+  actionId: string;
+  startedAt: string;
+  approval: ApprovalGrant;
+  adapterState: { before: string; intended: string };
+};
+
+type ActiveClaim = {
+  schemaVersion: "governed-action-claim/v1";
+  actionDigest: string;
+  claimId: string;
+  ownerPid: number;
+  claimedAt: string;
+  checkpoint: ClaimCheckpoint | null;
+};
 
 export interface ReceiptStore {
   claim(idempotencyKey: string, actionDigest: string): Promise<IdempotencyClaim>;
+  checkpoint(idempotencyKey: string, actionDigest: string, claimId: string, checkpoint: ClaimCheckpoint): Promise<void>;
+  recoverOrphaned(idempotencyKey: string, actionDigest: string, claimId: string): Promise<{ claimId: string; checkpoint: ClaimCheckpoint | null } | null>;
   append(receipt: ExecutionReceipt, idempotencyKey: string): Promise<void>;
   release(idempotencyKey: string, actionDigest: string): Promise<void>;
   list(): Promise<ExecutionReceipt[]>;
@@ -29,7 +48,7 @@ export class MemoryReceiptStore implements ReceiptStore {
   readonly receipts: ExecutionReceipt[] = [];
   readonly idempotency = new Map<string, string>();
   readonly bindings = new Map<string, string>();
-  readonly active = new Set<string>();
+  readonly active = new Map<string, ActiveClaim>();
 
   async claim(idempotencyKey: string, actionDigest: string): Promise<IdempotencyClaim> {
     const boundDigest = this.bindings.get(idempotencyKey);
@@ -37,14 +56,27 @@ export class MemoryReceiptStore implements ReceiptStore {
     if (this.active.has(idempotencyKey)) return { status: "in_progress" };
 
     this.bindings.set(idempotencyKey, actionDigest);
-    this.active.add(idempotencyKey);
+    const active = newActiveClaim(actionDigest);
+    this.active.set(idempotencyKey, active);
     const receiptId = this.idempotency.get(idempotencyKey);
     const receipt = this.receipts.find((candidate) => candidate.id === receiptId);
     if (receipt) {
       this.active.delete(idempotencyKey);
       return { status: "replay", receipt: structuredClone(receipt) };
     }
-    return { status: "claimed" };
+    return { status: "claimed", claimId: active.claimId };
+  }
+
+  async checkpoint(idempotencyKey: string, actionDigest: string, claimId: string, checkpoint: ClaimCheckpoint): Promise<void> {
+    const active = this.active.get(idempotencyKey);
+    if (!active || active.actionDigest !== actionDigest || active.claimId !== claimId) {
+      throw new Error("Active idempotency claim changed before checkpoint.");
+    }
+    this.active.set(idempotencyKey, { ...active, checkpoint: structuredClone(checkpoint) });
+  }
+
+  async recoverOrphaned(): Promise<null> {
+    return null;
   }
 
   async append(receipt: ExecutionReceipt, idempotencyKey: string): Promise<void> {
@@ -76,6 +108,26 @@ type FileBinding = {
   idempotencyKey: string;
   actionDigest: string;
 };
+
+function newActiveClaim(actionDigest: string, checkpoint: ClaimCheckpoint | null = null): ActiveClaim {
+  return {
+    schemaVersion: "governed-action-claim/v1",
+    actionDigest,
+    claimId: randomUUID(),
+    ownerPid: process.pid,
+    claimedAt: new Date().toISOString(),
+    checkpoint,
+  };
+}
+
+function processIsAlive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code !== "ESRCH";
+  }
+}
 
 export class FileReceiptStore implements ReceiptStore {
   constructor(readonly path: string) {}
@@ -113,6 +165,33 @@ export class FileReceiptStore implements ReceiptStore {
     return join(this.bindingDirectory(), `${this.token(idempotencyKey)}.active`);
   }
 
+  private recoveryPath(idempotencyKey: string): string {
+    return join(this.bindingDirectory(), `${this.token(idempotencyKey)}.recovering`);
+  }
+
+  private async readActive(path: string): Promise<ActiveClaim | null> {
+    try {
+      const parsed = JSON.parse(await readFile(path, "utf8")) as Partial<ActiveClaim>;
+      if (
+        parsed.schemaVersion !== "governed-action-claim/v1" ||
+        typeof parsed.actionDigest !== "string" ||
+        typeof parsed.claimId !== "string" ||
+        typeof parsed.ownerPid !== "number" ||
+        typeof parsed.claimedAt !== "string" ||
+        !(parsed.checkpoint === null || typeof parsed.checkpoint === "object")
+      ) return null;
+      return parsed as ActiveClaim;
+    } catch {
+      return null;
+    }
+  }
+
+  private async replaceActive(path: string, active: ActiveClaim): Promise<void> {
+    const temporary = join(dirname(path), `.${randomUUID()}.active.tmp`);
+    await writeFile(temporary, `${JSON.stringify(active)}\n`, { mode: 0o600 });
+    await rename(temporary, path);
+  }
+
   private async readBinding(path: string): Promise<FileBinding> {
     for (let attempt = 0; attempt < 50; attempt += 1) {
       try {
@@ -144,24 +223,77 @@ export class FileReceiptStore implements ReceiptStore {
       }
     }
 
+    const data = await this.read();
+    const receiptId = data.idempotency[idempotencyKey];
+    const receipt = data.receipts.find((candidate) => candidate.id === receiptId);
+    if (receipt) return { status: "replay", receipt };
+
     const activePath = this.activePath(idempotencyKey);
+    const active = newActiveClaim(actionDigest);
     try {
-      await writeFile(activePath, `${actionDigest}\n`, { flag: "wx", mode: 0o600 });
+      await writeFile(activePath, `${JSON.stringify(active)}\n`, { flag: "wx", mode: 0o600 });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+        const existing = await this.readActive(activePath);
+        if (
+          existing &&
+          existing.actionDigest === actionDigest &&
+          !processIsAlive(existing.ownerPid)
+        ) {
+          return {
+            status: "orphaned",
+            claimId: existing.claimId,
+            checkpoint: existing.checkpoint,
+          };
+        }
         return { status: "in_progress" };
       }
       throw error;
     }
+    return { status: "claimed", claimId: active.claimId };
+  }
 
-    const data = await this.read();
-    const receiptId = data.idempotency[idempotencyKey];
-    const receipt = data.receipts.find((candidate) => candidate.id === receiptId);
-    if (receipt) {
-      await unlink(activePath).catch(() => undefined);
-      return { status: "replay", receipt };
+  async checkpoint(idempotencyKey: string, actionDigest: string, claimId: string, checkpoint: ClaimCheckpoint): Promise<void> {
+    const path = this.activePath(idempotencyKey);
+    const active = await this.readActive(path);
+    if (!active || active.actionDigest !== actionDigest || active.claimId !== claimId) {
+      throw new Error("Active idempotency claim changed before checkpoint.");
     }
-    return { status: "claimed" };
+    await this.replaceActive(path, { ...active, checkpoint });
+  }
+
+  async recoverOrphaned(idempotencyKey: string, actionDigest: string, claimId: string): Promise<{ claimId: string; checkpoint: ClaimCheckpoint | null } | null> {
+    const recoveryPath = this.recoveryPath(idempotencyKey);
+    let locked = false;
+    for (let attempt = 0; attempt < 2 && !locked; attempt += 1) {
+      try {
+        await writeFile(recoveryPath, `${JSON.stringify({ ownerPid: process.pid })}\n`, { flag: "wx", mode: 0o600 });
+        locked = true;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+        const owner = JSON.parse(
+          await readFile(recoveryPath, "utf8").catch(() => "{}"),
+        ) as { ownerPid?: unknown };
+        if (typeof owner.ownerPid !== "number" || processIsAlive(owner.ownerPid)) return null;
+        await unlink(recoveryPath).catch(() => undefined);
+      }
+    }
+    if (!locked) return null;
+    try {
+      const path = this.activePath(idempotencyKey);
+      const active = await this.readActive(path);
+      if (
+        !active ||
+        active.actionDigest !== actionDigest ||
+        active.claimId !== claimId ||
+        processIsAlive(active.ownerPid)
+      ) return null;
+      const recovered = newActiveClaim(actionDigest, active.checkpoint);
+      await this.replaceActive(path, recovered);
+      return { claimId: recovered.claimId, checkpoint: recovered.checkpoint };
+    } finally {
+      await unlink(recoveryPath).catch(() => undefined);
+    }
   }
 
   async append(receipt: ExecutionReceipt, idempotencyKey: string): Promise<void> {
