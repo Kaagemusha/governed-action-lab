@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { MemoryApprovalStore, OperatorApprovalProvider } from "../src/approval.js";
+import { FileApprovalStore, MemoryApprovalStore, OperatorApprovalProvider } from "../src/approval.js";
 import { SyntheticAutomationAdapter } from "../src/adapters/synthetic-automation.js";
 import { sha256 } from "../src/canonical.js";
 import {
@@ -129,6 +129,71 @@ function leaveOrphanedFileClaim(input: {
     },
   );
   assert.equal(child.status, 0, child.stderr);
+}
+
+function crashAfterApprovalConsumption(input: {
+  receiptPath: string;
+  approvalPath: string;
+  sandboxDirectory: string;
+  action: ActionRequest;
+  decision: unknown;
+}): void {
+  const child = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `
+        import { FileApprovalStore } from "./dist/src/approval.js";
+        import { SyntheticAutomationAdapter } from "./dist/src/adapters/synthetic-automation.js";
+        import { executeGovernedAction } from "./dist/src/executor.js";
+        import { FileReceiptStore } from "./dist/src/store.js";
+
+        class CrashAfterConsumeStore extends FileApprovalStore {
+          async consume(grant) {
+            const consumed = await super.consume(grant);
+            if (consumed) process.kill(process.pid, "SIGKILL");
+            return consumed;
+          }
+        }
+
+        const action = JSON.parse(process.env.GA_ACTION);
+        const decision = JSON.parse(process.env.GA_DECISION);
+        const policy = JSON.parse(process.env.GA_POLICY);
+        const evidence = JSON.parse(process.env.GA_EVIDENCE);
+        const clock = { now: () => new Date("2026-07-28T09:12:00Z") };
+        await executeGovernedAction(action, decision, {
+          adapter: new SyntheticAutomationAdapter(process.env.GA_SANDBOX),
+          approvals: new CrashAfterConsumeStore(process.env.GA_APPROVALS),
+          receipts: new FileReceiptStore(process.env.GA_RECEIPTS),
+          policy,
+          evidence,
+          clock,
+          verifiedPrincipal: action.proposer,
+          loadCurrentState: async () => ({
+            evidence,
+            currentTargetHash: "${targetHash}",
+            diagnosticAsOf: "2026-07-28T09:10:00Z",
+          }),
+        });
+      `,
+    ],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        GA_ACTION: JSON.stringify(input.action),
+        GA_DECISION: JSON.stringify(input.decision),
+        GA_POLICY: JSON.stringify(policy),
+        GA_EVIDENCE: JSON.stringify(evidence),
+        GA_RECEIPTS: input.receiptPath,
+        GA_APPROVALS: input.approvalPath,
+        GA_SANDBOX: input.sandboxDirectory,
+      },
+      encoding: "utf8",
+    },
+  );
+  assert.equal(child.signal, "SIGKILL", child.stderr);
 }
 
 for (const [storeName, createStore] of receiptStoreFactories) {
@@ -495,6 +560,60 @@ for (const applyEffect of [false, true]) {
     assert.equal(state.adapter.executeCalls, applyEffect ? 0 : 1);
   });
 }
+
+test("file store recovers a dead process after approval consumption and before the effect", async () => {
+  const action = request();
+  const directory = await mkdtemp(join(tmpdir(), "governed-consumed-orphan-"));
+  const receiptPath = join(directory, "receipts.json");
+  const approvalPath = join(directory, "approvals.json");
+  const sandboxDirectory = join(directory, "sandbox");
+  const approvals = new FileApprovalStore(approvalPath);
+  const decision = evaluateAction(action, policy, evidence, clock);
+  const approval = await new OperatorApprovalProvider(approvals, clock).issue(
+    action,
+    decision,
+    "operator",
+    true,
+  );
+
+  crashAfterApprovalConsumption({
+    receiptPath,
+    approvalPath,
+    sandboxDirectory,
+    action,
+    decision,
+  });
+
+  const persistedApprovals = JSON.parse(await readFile(approvalPath, "utf8")) as {
+    consumedIds: string[];
+  };
+  assert.deepEqual(persistedApprovals.consumedIds, [approval.id]);
+
+  const adapter = new SyntheticAutomationAdapter(sandboxDirectory);
+  const receipts = new FileReceiptStore(receiptPath);
+  const dependencies = {
+    adapter,
+    approvals,
+    receipts,
+    policy,
+    evidence,
+    clock,
+    verifiedPrincipal: action.proposer,
+    loadCurrentState: async () => ({
+      evidence,
+      currentTargetHash: targetHash,
+      diagnosticAsOf: "2026-07-28T09:10:00Z",
+    }),
+  };
+  const recovered = await executeGovernedAction(action, decision, dependencies);
+
+  assert.equal(recovered.result, "succeeded");
+  assert.equal(recovered.approvalId, approval.id);
+  assert.equal(adapter.executeCalls, 1);
+  const replay = await executeGovernedAction(action, decision, dependencies);
+  assert.equal(replay.id, recovered.id);
+  assert.equal(adapter.executeCalls, 1);
+});
 
 test("orphan recovery preserves the claim when synthetic state is ambiguous", async () => {
   const action = request();
