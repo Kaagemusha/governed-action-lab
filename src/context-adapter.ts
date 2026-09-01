@@ -170,7 +170,7 @@ export function proposeActionFromDiagnostic(
 
 export function recheckProposal(
   diagnosticInput: unknown,
-  requestInput: ActionRequest,
+  requestInput: unknown,
 ): AdaptedProposal {
   const request = actionRequestSchema.parse(requestInput);
   const adapted = proposeActionFromDiagnostic(diagnosticInput, {

@@ -53,3 +53,62 @@ test("CLI rejects a tampered portable proof", async (context) => {
     /receipt schema or digest is invalid/,
   );
 });
+
+test("CLI prepare independently reviews an existing proposal", async (context) => {
+  const directory = await mkdtemp(join(tmpdir(), "governed-action-cli-review-"));
+  context.after(async () => {
+    await rm(directory, { recursive: true, force: true });
+  });
+  const requestPath = join(directory, "request.json");
+  const reviewPath = join(directory, "review.json");
+
+  assert.equal(
+    await runCli([
+      "propose",
+      "--diagnostic",
+      "examples/context-layer-diagnostic-v2.json",
+      "--action",
+      "retry_failed_lane",
+      "--lane",
+      "site-refresh",
+      "--output",
+      requestPath,
+    ]),
+    0,
+  );
+  assert.equal(
+    await runCli([
+      "prepare",
+      "--diagnostic",
+      "examples/context-layer-diagnostic-v2.json",
+      "--request",
+      requestPath,
+      "--sandbox",
+      join(directory, "sandbox"),
+      "--output",
+      reviewPath,
+    ]),
+    0,
+  );
+
+  const request = JSON.parse(await readFile(requestPath, "utf8"));
+  const review = JSON.parse(await readFile(reviewPath, "utf8"));
+  assert.deepEqual(review.request, request);
+  assert.equal(review.status, "APPROVAL_REQUIRED");
+
+  request.action.recordId = "receipt-substituted-after-proposal";
+  const tamperedPath = join(directory, "tampered-request.json");
+  await writeFile(tamperedPath, JSON.stringify(request));
+  await assert.rejects(
+    runCli([
+      "prepare",
+      "--diagnostic",
+      "examples/context-layer-diagnostic-v2.json",
+      "--request",
+      tamperedPath,
+      "--sandbox",
+      join(directory, "sandbox"),
+    ]),
+    /no longer matches the selected diagnostic evidence/,
+  );
+});
