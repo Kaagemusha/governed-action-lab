@@ -87,18 +87,25 @@ Artifact-oriented commands:
 ```bash
 npm run fixture:fresh -- --output /tmp/governed-diagnostic.json
 
-npm run action -- prepare \
+npm run action -- propose \
   --diagnostic /tmp/governed-diagnostic.json \
   --action retry_failed_lane \
   --lane site-refresh \
+  --output /tmp/action-request.json
+
+npm run action -- prepare \
+  --diagnostic /tmp/governed-diagnostic.json \
+  --request /tmp/action-request.json \
   --output /tmp/action-review.json \
   --brief-output /tmp/action-review.md
 ```
 
-`prepare` is the operator-facing read path. It validates the diagnostic,
-creates the typed request, evaluates policy, and simulates the projected effect
-as a strict review packet: `governed-action-review/v1` for diagnostic v1 or
-`governed-action-review/v2` for diagnostic v2. It never approves or executes.
+`propose` and `prepare` are separate passes. `propose` creates the typed request;
+`prepare` accepts that existing request, independently regenerates its evidence
+binding from the diagnostic, rejects any mismatch, then evaluates policy and
+simulates the projected effect as a strict review packet:
+`governed-action-review/v1` for diagnostic v1 or `governed-action-review/v2`
+for diagnostic v2. It never approves or executes.
 The optional six-line brief reports the action, evidence boundary, required
 authority, and next step without a model call.
 

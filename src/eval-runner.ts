@@ -340,13 +340,15 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
     const adapter = new SyntheticAutomationAdapter(
       await mkdtemp(join(tmpdir(), "governed-review-")),
     );
+    const proposal = proposeActionFromDiagnostic(diagnostic, {
+      actionType:
+        id === "32-review-ready" ? "inspect_run_receipt" : "retry_failed_lane",
+      laneId: "site-refresh",
+      proposedAt: decisionClock.now().toISOString(),
+    });
     const review = await prepareActionReview(
       diagnostic,
-      {
-        actionType:
-          id === "32-review-ready" ? "inspect_run_receipt" : "retry_failed_lane",
-        laneId: "site-refresh",
-      },
+      proposal.request,
       policy,
       adapter,
       decisionClock,
@@ -354,9 +356,14 @@ async function runCase(id: string): Promise<Record<string, unknown>> {
     return { code: review.status, adapterCalls: adapter.executeCalls };
   }
   if (id === "34-review-tamper") {
+    const proposal = proposeActionFromDiagnostic(diagnostic, {
+      actionType: "retry_failed_lane",
+      laneId: "site-refresh",
+      proposedAt: decisionClock.now().toISOString(),
+    });
     const review = await prepareActionReview(
       diagnostic,
-      { actionType: "retry_failed_lane", laneId: "site-refresh" },
+      proposal.request,
       policy,
       new SyntheticAutomationAdapter(await mkdtemp(join(tmpdir(), "governed-review-"))),
       decisionClock,

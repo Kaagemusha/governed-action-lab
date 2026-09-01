@@ -6,35 +6,21 @@ import {
   REVIEW_V2_VERSION,
   actionReviewSchema,
   type ActionReview,
-  type CatalogAction,
   type PolicyManifest,
   type PolicyTrustBinding,
 } from "./contracts.js";
-import { proposeActionFromDiagnostic } from "./context-adapter.js";
+import { recheckProposal } from "./context-adapter.js";
 import { actionDigest, evaluateAction, type Clock } from "./policy.js";
 
 export async function prepareActionReview(
   diagnosticInput: unknown,
-  input: {
-    actionType: CatalogAction["type"];
-    laneId: string;
-    adapterId?: string;
-    environment?: string;
-    proposerId?: string;
-  },
+  requestInput: unknown,
   policy: PolicyManifest,
   adapter: ActionAdapter,
   clock?: Clock,
   policyTrust?: PolicyTrustBinding,
 ): Promise<ActionReview> {
-  const proposal = proposeActionFromDiagnostic(diagnosticInput, {
-    actionType: input.actionType,
-    laneId: input.laneId,
-    ...(input.adapterId ? { adapterId: input.adapterId } : {}),
-    ...(input.environment ? { environment: input.environment } : {}),
-    proposerId: input.proposerId ?? "operator-review",
-    ...(clock ? { proposedAt: clock.now().toISOString() } : {}),
-  });
+  const proposal = recheckProposal(diagnosticInput, requestInput);
   if (adapter.id !== proposal.request.target.adapterId) {
     throw new Error("Review adapter does not match the requested target adapter.");
   }

@@ -76,20 +76,20 @@ export async function buildPortableGreenProof(input: {
   const frozenAt = input.diagnostic.scenario.asOf;
   const clock = { now: () => new Date(frozenAt) };
   const adapter = new SyntheticAutomationAdapter(".");
+  const proposal = proposeActionFromDiagnostic(input.diagnostic, {
+    actionType: "inspect_run_receipt",
+    laneId: PORTABLE_PROOF_LANE,
+    proposerId: "portable-proof-generator",
+    proposedAt: clock.now().toISOString(),
+  });
   const review = await prepareActionReview(
     input.diagnostic,
-    { actionType: "inspect_run_receipt", laneId: PORTABLE_PROOF_LANE, proposerId: "portable-proof-generator" },
+    proposal.request,
     input.policy,
     adapter,
     clock,
   );
   invariant(review.schemaVersion === "governed-action-review/v2", "generated review is not v2");
-  const proposal = proposeActionFromDiagnostic(input.diagnostic, {
-    actionType: "inspect_run_receipt",
-    laneId: PORTABLE_PROOF_LANE,
-    proposerId: "portable-proof-generator",
-    proposedAt: frozenAt,
-  });
   const receipt = await executeGovernedAction(review.request, review.decision, {
     policy: input.policy,
     evidence: proposal.evidence,
@@ -147,7 +147,7 @@ export async function verifyPortableProof(input: unknown): Promise<ProofPacket> 
 
   const expectedReview = await prepareActionReview(
     packet.diagnostic,
-    { actionType: "inspect_run_receipt", laneId: PORTABLE_PROOF_LANE, proposerId: "portable-proof-generator" },
+    packet.review.request,
     packet.policy,
     new SyntheticAutomationAdapter("."),
     { now: () => new Date(frozenAt) },

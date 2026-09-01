@@ -6,6 +6,10 @@ import { SyntheticAutomationAdapter } from "../src/adapters/synthetic-automation
 import { digestOmitting, sha256 } from "../src/canonical.js";
 import type { PolicyManifest } from "../src/contracts.js";
 import {
+  proposeActionFromDiagnostic,
+  type ProposalInput,
+} from "../src/context-adapter.js";
+import {
   prepareActionReview,
   renderActionReviewBrief,
   verifyActionReview,
@@ -27,24 +31,31 @@ const hostAdapter = Object.assign(Object.create(adapter), {
 }) as SyntheticAutomationAdapter;
 const clock = { now: () => new Date("2026-07-28T09:10:00Z") };
 
+function proposeForReview(diagnosticInput: unknown, input: ProposalInput) {
+  return proposeActionFromDiagnostic(diagnosticInput, {
+    ...input,
+    proposedAt: input.proposedAt ?? clock.now().toISOString(),
+  }).request;
+}
+
 test("prepares ready, approval-required, and refused reviews without execution", async () => {
   const ready = await prepareActionReview(
     diagnostic,
-    { actionType: "inspect_run_receipt", laneId: "site-refresh" },
+    proposeForReview(diagnostic, { actionType: "inspect_run_receipt", laneId: "site-refresh" }),
     policy,
     adapter,
     clock,
   );
   const approval = await prepareActionReview(
     diagnostic,
-    { actionType: "retry_failed_lane", laneId: "site-refresh" },
+    proposeForReview(diagnostic, { actionType: "retry_failed_lane", laneId: "site-refresh" }),
     policy,
     adapter,
     clock,
   );
   const refused = await prepareActionReview(
     diagnostic,
-    { actionType: "delete_preserved_output", laneId: "research-watch" },
+    proposeForReview(diagnostic, { actionType: "delete_preserved_output", laneId: "research-watch" }),
     policy,
     adapter,
     clock,
@@ -58,10 +69,35 @@ test("prepares ready, approval-required, and refused reviews without execution",
   assert.equal(verifyActionReview(approval).id, approval.id);
 });
 
+test("review consumes and independently rechecks an existing proposal", async () => {
+  const request = proposeForReview(diagnosticV2, {
+    actionType: "retry_failed_lane",
+    laneId: "site-refresh",
+    proposerId: "separate-proposal-pass",
+  });
+  const review = await prepareActionReview(
+    diagnosticV2,
+    request,
+    policy,
+    adapter,
+    clock,
+  );
+
+  assert.deepEqual(review.request, request);
+  assert.equal(review.request.proposer.id, "separate-proposal-pass");
+
+  const tampered = structuredClone(request);
+  tampered.action.recordId = "receipt-substituted-after-proposal";
+  await assert.rejects(
+    () => prepareActionReview(diagnosticV2, tampered, policy, adapter, clock),
+    /no longer matches the selected diagnostic evidence/,
+  );
+});
+
 test("v2 evidence remains explicit in the operator review", async () => {
   const review = await prepareActionReview(
     diagnosticV2,
-    { actionType: "retry_failed_lane", laneId: "site-refresh" },
+    proposeForReview(diagnosticV2, { actionType: "retry_failed_lane", laneId: "site-refresh" }),
     policy,
     adapter,
     clock,
@@ -95,12 +131,12 @@ test("operator review binds an exact trusted host policy manifest", async () => 
   };
   const review = await prepareActionReview(
     diagnosticV2,
-    {
+    proposeForReview(diagnosticV2, {
       actionType: "retry_failed_lane",
       laneId: "site-refresh",
       adapterId: "host-heartbeat",
       environment: "host_local_reversible",
-    },
+    }),
     hostPolicy,
     hostAdapter,
     clock,
@@ -118,12 +154,12 @@ test("operator review rejects a plan from a different adapter", async () => {
     () =>
       prepareActionReview(
         diagnosticV2,
-        {
+        proposeForReview(diagnosticV2, {
           actionType: "retry_failed_lane",
           laneId: "site-refresh",
           adapterId: "host-heartbeat",
           environment: "host_local_reversible",
-        },
+        }),
         policy,
         adapter,
         clock,
@@ -135,7 +171,7 @@ test("operator review rejects a plan from a different adapter", async () => {
 test("review verification rejects a format mismatch after digest recomputation", async () => {
   const review = await prepareActionReview(
     diagnosticV2,
-    { actionType: "retry_failed_lane", laneId: "site-refresh" },
+    proposeForReview(diagnosticV2, { actionType: "retry_failed_lane", laneId: "site-refresh" }),
     policy,
     adapter,
     clock,
@@ -162,7 +198,7 @@ test("review verification rejects a format mismatch after digest recomputation",
 test("renders a bounded operator brief", async () => {
   const review = await prepareActionReview(
     diagnostic,
-    { actionType: "retry_failed_lane", laneId: "site-refresh" },
+    proposeForReview(diagnostic, { actionType: "retry_failed_lane", laneId: "site-refresh" }),
     policy,
     adapter,
     clock,
@@ -178,7 +214,7 @@ test("renders a bounded operator brief", async () => {
 test("rejects a tampered review packet", async () => {
   const review = await prepareActionReview(
     diagnostic,
-    { actionType: "retry_failed_lane", laneId: "site-refresh" },
+    proposeForReview(diagnostic, { actionType: "retry_failed_lane", laneId: "site-refresh" }),
     policy,
     adapter,
     clock,

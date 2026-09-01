@@ -20,6 +20,8 @@ The boundary assumes:
 
 - the Node.js process, code, policy, clock, stores, and injected adapter are trusted;
 - the host supplies the verified principal independently of the proposal;
+- the review pass receives an already-produced typed request and independently
+  rechecks its action, evidence, and expected state against the diagnostic;
 - operator approval is issued through the separate provider and its store is not
   attacker-controlled within the trusted process;
 - evidence inputs may be checked for schema, provenance, freshness, and internal

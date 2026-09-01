@@ -79,11 +79,7 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
     );
     const review = await prepareActionReview(
       await json(required(args, "diagnostic")),
-      {
-        actionType: actionType(args),
-        laneId: required(args, "lane"),
-        proposerId: "operator-review-cli",
-      },
+      actionRequestSchema.parse(await json(required(args, "request"))),
       await loadPolicy(args),
       adapter,
       typeof args.at === "string" ? { now: () => new Date(args.at as string) } : undefined,
