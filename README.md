@@ -1,431 +1,90 @@
 # Governed Action Lab
 
-A small, inspectable reference implementation showing that an agent's proposed
-action is not authorization.
+[![CI](https://github.com/Kaagemusha/governed-action-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Kaagemusha/governed-action-lab/actions/workflows/ci.yml)
+![Node 22](https://img.shields.io/badge/node-22-339933?logo=node.js&logoColor=white)
+![35/35 eval cases](https://img.shields.io/badge/eval-35%2F35-brightgreen)
+![5/5 attacks held](https://img.shields.io/badge/attacks-5%2F5%20held-brightgreen)
 
-**Status: reference implementation, not a production authorization system.**
-This repository demonstrates deterministic policy gates, non-mintable operator
-approvals, and cryptographic action receipts as a teaching and portfolio
-artifact. It does not provide production identity, RBAC, isolation, or a
-tamper-proof external log, and it has not been hardened against adversarial
-misuse.
+An agent's proposed action is not authorization. This is a small, inspectable
+reference implementation that keeps *can the tool act*, *does policy allow
+it*, *who authorizes it*, and *was it verified* as four separate,
+independently checkable questions instead of one model decision.
 
-**[Open the live governed-action console](https://kaagemusha.github.io/governed-action-lab/)**
+![Governed Action Lab console: the yellow retry-lane path open for exact human approval](docs/media/console.png)
 
-The lab places a deterministic governance boundary between a typed proposal and
-an executor. It makes evidence, policy, authority, execution, verification, and
-rollback inspectable without granting an agent the ability to approve its own
-mutation.
+![Flipping between the green, yellow, and red paths in the live console](docs/media/demo.gif)
+
+**[Open the live console](https://kaagemusha.github.io/governed-action-lab/)** —
+no install, three synthetic paths (allow / approval required / refuse), fully
+interactive.
 
 ## The failure it prevents
 
-An agent may have access to a tool and current evidence without having authority
-to use that tool. Treating capability as permission collapses three different
-questions:
+An agent can hold a working tool and fresh evidence without holding authority
+to use that tool on this target, right now. Collapsing "can" and "may" into
+one model judgment call is how an agent talks itself into an action nobody
+approved. This repo keeps them apart with a closed action catalog, a
+deterministic policy gate, and approvals a model cannot mint for itself.
 
-```text
-Can the tool perform this effect?
-Does policy allow this exact effect?
-Who may authorize it?
-```
+## What this proves
 
-Governed Action Lab keeps those questions separate. The policy engine uses a
-closed action catalog, never a model or free-form shell analysis.
+- **Approval doesn't bypass freshness.** A valid, single-use human grant still
+  gets its evidence rechecked against the real clock at execute time — see the
+  stale refusal captured live in [`docs/pair-walkthrough.md`](docs/pair-walkthrough.md).
+- **Refusal produces a receipt too.** Denied and refused actions are just as
+  verifiable as completed ones — same schema, same digest check.
+- **35 adversarial cases and 5 named attacks pass against the real code path**,
+  not a mocked one — `npm run eval` and `npm run demo:attacks`.
 
-## Three paths
+## Quick start
 
-The public scenario is synthetic:
-
-| Proposed action | Class | Disposition | Executable path |
-|---|---|---|---|
-| Inspect a failed run receipt | Green | Allow | Read-only adapter |
-| Retry the failed lane | Yellow | Approval required | Exact, expiring, single-use human approval followed by a reversible sandbox adapter |
-| Delete preserved output | Red | Refuse | None; approval cannot override refusal |
-
-The console presents all three paths without navigation. Browser execution is
-explicitly a synthetic demonstration and never touches an external system.
-
-## Two-minute quick start
-
-Requires Node.js 22 or newer.
+Requires Node.js 22+.
 
 ```bash
 npm install
-npm run check
+npm run check              # typecheck, tests, evals, demo + proof drift, public-safety
 npm run action -- demo --json
 ```
 
-Serve `docs/` with any static file server to use the local-first console.
+Serve `docs/` with any static file server to run the console locally.
 
-## 60-second attack demo
-
-Run five deterministic attacks through the real schema, policy, approval,
-executor, state-recheck, and receipt-verification code:
-
-```bash
-npm run demo:attacks
-```
-
-Expected output:
+## Two labs, one boundary
 
 ```text
-ARGUMENT_SUBSTITUTION: DENIED
-APPROVAL_REPLAY: DENIED
-CONFUSED_DEPUTY: DENIED
-TOCTOU_CHANGED_STATE: DENIED
-RECEIPT_CONTENT_TAMPERING: DETECTED
-5/5 expected defenses held
+Context Layer Lab  ->  diagnose        what current evidence supports
+Governed Action Lab ->  prepare/approve what may execute, under whose authority
+                    ->  execute/verify  with what receipt
 ```
 
-The demo uses a frozen synthetic clock and temporary local state. It covers only
-the five named checks; the receipt case changes content while leaving its recorded
-digest unchanged. Receipt collection history and cross-call information-flow
-composition are explicitly outside the defended boundary.
+[Context Layer Lab](https://kaagemusha.github.io/context-layer-lab/) answers
+what the evidence supports. This repo answers what may execute given that
+evidence, under whose authority, and with what receipt. They're one pitch in
+two repos, not two unrelated projects — the real command sequence between
+them, with real output, is in
+[`docs/pair-walkthrough.md`](docs/pair-walkthrough.md).
 
-Artifact-oriented commands:
+## Scope and limits
 
-```bash
-npm run fixture:fresh -- --output /tmp/governed-diagnostic.json
+**Status: reference implementation, not a production authorization system.**
+It demonstrates deterministic policy gates, non-mintable operator approvals,
+and cryptographic action receipts as a teaching and portfolio artifact. It
+does not provide production identity, RBAC, multi-tenancy, machine isolation,
+or a tamper-proof external log, and it has not been hardened against
+adversarial misuse. There is no production, network, credential, financial,
+or deletion adapter, and there never will be one in this repository — see
+[`docs/architecture.md`](docs/architecture.md#threat-model-and-limits) for the
+full threat model.
 
-npm run action -- propose \
-  --diagnostic /tmp/governed-diagnostic.json \
-  --action retry_failed_lane \
-  --lane site-refresh \
-  --output /tmp/action-request.json
+## Learn more
 
-npm run action -- prepare \
-  --diagnostic /tmp/governed-diagnostic.json \
-  --request /tmp/action-request.json \
-  --output /tmp/action-review.json \
-  --brief-output /tmp/action-review.md
-```
-
-`propose` and `prepare` are separate passes. `propose` creates the typed request;
-`prepare` accepts that existing request, independently regenerates its evidence
-binding from the diagnostic, rejects any mismatch, then evaluates policy and
-simulates the projected effect as a strict review packet:
-`governed-action-review/v1` for diagnostic v1 or `governed-action-review/v2`
-for diagnostic v2. It never approves or executes.
-The optional six-line brief reports the action, evidence boundary, required
-authority, and next step without a model call.
-
-### Operational proof
-
-Operational lineage: this pattern has been exercised in a private governed vault
-workflow. This public repository remains synthetic, public-safe, and disconnected
-from that workflow and from any production system.
-
-The review path runs after a scheduled private context diagnostic. A supervised
-10-case shadow pilot covered healthy, failed, preserved-local, missing, stale,
-contradictory, mixed, unavailable-runtime, transition, and deterministic-replay
-states. All cases passed without creating an approval or mutation artifact.
-
-One bounded green action now runs privately after that review: it inspects one
-hash-bound local evidence file through a root-confined, non-symlink, read-only
-adapter and writes at most one immutable receipt per day. The live receipt
-verified its schema and digest, carried no approval, matched the diagnostic's
-source hash, and recorded identical before/after hashes. Immediate replay reused
-the receipt and changed no files. Yellow execution remains disabled.
-
-A separate supervised yellow proof ran only in the bundled synthetic sandbox.
-The operator had to type the literal approval in an interactive terminal after
-seeing the exact target, effect, evidence, expiry, and rollback contract. The
-resulting five-minute, single-use grant bound the request and decision; execution
-rechecked current state, wrote one synthetic retry record, and produced a valid
-receipt. Replay returned that same receipt without a second effect. Compensation
-was pre-authorized but not needed. No external system was connected or changed.
-
-The public console uses synthetic data to show the same status and authority
-boundary. Its green and yellow exports pass the real receipt schema and digest
-verifier, include the complete precondition and timing fields, and identify the
-adapter version as `browser-synthetic/1`. They remain browser-only simulations;
-no private diagnostic, receipt, lane identifier, path, hostname, or operating
-record is published in this repository.
-
-The repository also publishes one frozen, portable green proof packet at
-[`docs/governed-action-proof.json`](docs/governed-action-proof.json). It embeds
-the exact Context Layer v2 fixture, public policy 1.3.0, recomputed READY review,
-and a successful approval-free receipt generated through the actual synthetic
-executor's read path. Generate or verify byte-for-byte drift with:
-
-```bash
-npm run proof:sync
-npm run proof:check
-npm run action -- verify-proof --proof docs/governed-action-proof.json
-```
-
-`verifyPortableProof` validates strict schemas, frozen producer metadata,
-canonical diagnostic and policy hashes, recomputed request/decision/review
-semantics, read-only receipt invariants, nested digests, and the outer packet
-digest. These digests demonstrate integrity and binding inside this artifact;
-they are not signatures, authenticity claims, external audit anchors, or proof
-that an external system was inspected. The packet contains no approval grant,
-yellow execution, private path, hostname, or operating record.
-The CLI verifier accepts any supplied packet, runs that same strict verifier,
-and returns only a compact validity result and identity fields; it does not
-execute the embedded action or replay the packet contents.
-
-The lower-level lifecycle remains available for inspecting each boundary:
-
-```bash
-npm run action -- propose \
-  --diagnostic /tmp/governed-diagnostic.json \
-  --action retry_failed_lane \
-  --lane site-refresh \
-  --output /tmp/action-request.json
-
-npm run action -- evaluate \
-  --diagnostic /tmp/governed-diagnostic.json \
-  --request /tmp/action-request.json \
-  --output /tmp/action-decision.json
-
-npm run action -- approve \
-  --request /tmp/action-request.json \
-  --decision /tmp/action-decision.json \
-  --approval-store /tmp/governed-action-demo/approvals.json \
-  --operator reviewer \
-  --output /tmp/action-approval.json
-
-npm run action -- execute \
-  --diagnostic /tmp/governed-diagnostic.json \
-  --request /tmp/action-request.json \
-  --decision /tmp/action-decision.json \
-  --approval-store /tmp/governed-action-demo/approvals.json \
-  --receipt-store /tmp/governed-action-demo/receipts.json \
-  --sandbox /tmp/governed-action-demo/sandbox \
-  --output /tmp/action-receipt.json
-```
-
-`approve` is an interactive operator command. It displays the exact target,
-effect, evidence, five-minute expiry, and rollback contract before accepting
-the literal confirmation `APPROVE`. `execute` discovers a separately stored
-approval and rejects `--approve`, `--yes`, and inline approval text.
-`fixture:fresh` shifts the bundled evidence-bound v2 example to the current wall
-clock so its one-day evidence window remains meaningful; the library retains v1
-compatibility. Production execution
-always uses the system clock and has no `--at` override.
-
-## Context Layer Lab relationship
-
-[Context Layer Lab](https://kaagemusha.github.io/context-layer-lab/) answers:
-**what current evidence supports the conclusion?**
-
-Governed Action Lab answers: **given that evidence, what may execute, under
-whose authority, and with what receipt?**
-
-Together they form a deliberately narrow handoff from evidence reconciliation
-to bounded execution, rather than one agent-controlled system that conflates
-truth, permission, and authority.
-
-The public default consumes evidence-bound `context-layer-diagnostic/v2` from
-producer commit `5d74a5c5a0d1269a916612bcc69db60003ea69b8`. A frozen compatibility
-fixture retains `context-layer-diagnostic/v1` from producer commit
-`b0179a8e365ab35691864e55d5792db1bdefbcb2`. Metadata binds each
-exact producer artifact and fixture SHA-256; `npm run contract:check` fails if
-either local handoff drifts. During paired development, add
-`-- --producer-root ../context-layer-lab` to verify the frozen bytes against a
-sibling producer checkout. The consumer validates the complete packet, binds
-the request to its SHA-256 digest, independently checks the selected lane's
-latest raw receipt and due window, and verifies v2 typed evidence bindings. It
-does not import sibling source files or duplicate the producer's broader health
-logic. The public sample is v2; imported v1 and v2 packets are both governed.
-
-```text
-Context diagnostic v1 or v2
-  -> strict consumer adapter
-  -> typed action request
-  -> deterministic policy gate
-  -> allow / approval boundary / refusal
-  -> precondition recheck
-  -> allowlisted synthetic adapter
-  -> verification and receipt record
-```
-
-## Architecture
-
-```mermaid
-flowchart LR
-    C["Context diagnostic v1 or v2"] --> A["Strict context adapter"]
-    A --> Q["Typed action request"]
-    Q --> P["Deterministic policy"]
-    P -->|green| X["Allowlisted adapter"]
-    P -->|yellow| H["Operator approval provider"]
-    P -->|red| F["Refusal receipt"]
-    H --> B["Exact single-use grant"]
-    B --> R["Freshness + state recheck"]
-    R --> X
-    X --> V["Deterministic verification"]
-    X -->|partial failure| K["Pre-authorized compensation"]
-    V --> E["Receipt record"]
-    K --> E
-    M["Agent-facing MCP"] --> P
-    M --> X
-```
-
-The contracts, canonical hashing, context adapter, policy, approval provider,
-executor, sandbox adapter, stores, CLI, MCP server, and browser are separate
-layers. Browser decisions are compiled from the same core policy code rather
-than reimplemented.
-
-Dependency-injected hosts may evaluate a non-public policy only by supplying a
-trust binding that matches the policy ID, version, and canonical manifest
-digest. Rules may additionally carry an exact `allowedResourceIds` allowlist.
-Host policies may select the explicit `host_local_reversible` environment and
-an injected adapter ID; the policy binds both values and current-state recheck
-preserves them for the executor.
-These checks fail closed. This repository still includes no production adapter,
-and the bundled public policy and portable proof remain synthetic.
-
-## Contracts
-
-Strict Zod schemas reject unknown keys at persisted and transport boundaries:
-
-- `governed-action-review/v1`
-- `governed-action-review/v2` for evidence-bound diagnostic v2
-- `governed-action-request/v1`
-- `governed-action-decision/v1`
-- `governed-action-approval/v1`
-- `governed-action-receipt/v2`
-- `governed-action-policy/v1`
-- dual-read consumer for `context-layer-diagnostic/v1` and evidence-bound `v2`
-
-Canonical JSON recursively sorts keys and rejects non-JSON values before
-SHA-256 hashing. An approval binds both the complete request digest and the
-decision digest. The executor also requires an exact match to a host-supplied
-verified principal; the bundled CLI and MCP server use a fixed synthetic identity
-and do not provide authentication. Receipts describe bounded resources and
-before/after hashes. Each receipt also carries a runtime-assigned `actionId`
-and may carry a `parentActionId` when the trusted runtime directly knows the
-structural parent. That correlation is an audit trail, not delegation
-authorization or proof that child authority was attenuated from a parent.
-Before execution, each idempotency key is atomically and permanently bound to
-the complete action digest. A concurrent duplicate reports in-progress, a
-different action reports a conflict, and any receipt with effects is replayed
-rather than executed again. A same-action refusal with no effects may be
-retried after its missing precondition is supplied.
-
-The file-backed synthetic path also checkpoints the exact approval, action ID,
-start time, and adapter recovery state before mutation. If that local process
-dies, a later run may take over only after the operating system reports that no
-process has the recorded PID. The adapter must then reconcile the checkpoint against the
-current sandbox: an absent effect is executed once, an exact present effect is
-recorded without executing again, and any third state remains blocked. There is
-no age-based claim expiry. This is deliberately a single-host synthetic crash
-recovery demonstration, not a distributed lease protocol. PID reuse can
-conservatively leave a dead claim blocked; it cannot authorize takeover or a
-duplicate effect.
-
-Bundled policy `1.3.0` makes diagnostic v2 the public default and explicitly
-retains v1 as a compatible evidence format. Policy `1.2.0` was the dual-read,
-v1-default transition; legacy policy `1.1.0` remains v1-only. Changing the
-policy version deliberately invalidates earlier decision and approval digests.
-
-Receipt stores append during their ordinary API flow, but the verifier checks one
-presented receipt rather than an anchored sequence. Digest verification detects
-changed receipt content when its recorded digest is left unchanged; it cannot
-detect whole-receipt deletion, valid insertion, reordering, or duplication, and it
-does not defend against a process that controls the machine and can rewrite both
-data and code.
-
-## MCP tools
-
-| Tool | Effect |
-|---|---|
-| `evaluate_action` | Read-only validation and policy evaluation |
-| `explain_action_decision` | Read-only explanation |
-| `simulate_action` | Read-only projected effect |
-| `execute_approved_action` | Synthetic sandbox only; requires a separate stored approval |
-| `verify_action_receipt` | Read-only schema and digest verification |
-
-There is no approval-creation MCP tool. The executor tool accepts an action
-identifier, not an approval payload or command string.
-
-## Evaluations
-
-`npm run eval` executes 35 deterministic adversarial cases and compares actual
-structured output with explicit expected output. Coverage includes:
-
-- unknown action, adapter, environment, diagnostic, and command-shaped input;
-- green mutation mismatch and red action with a valid-looking approval;
-- changed, expired, replayed, tampered, and earlier-decision approvals;
-- evidence expiry, missing evidence, invalid quality, contradictory
-  assessments, and newer success before retry;
-- exact replay, concurrent and cross-action idempotency conflicts, failures
-  and process death before and after effect, ambiguous orphan recovery,
-  compensation, verification mismatch, and tampered receipts;
-- absent approval providers, MCP capability limits, forged browser decisions,
-  generated-demo drift, policy change after approval, review-only preparation,
-  and review-packet tampering.
-
-`npm run qa:responsive` launches an isolated local Chrome instance and asserts
-that the document and every rendered element remain within 320, 375, and 390px
-viewports.
-
-## Threat model and limits
-
-The lab demonstrates deterministic refusal and approval binding. It does not
-provide:
-
-- production authorization, OAuth, RBAC, multi-tenancy, or machine isolation;
-- a security boundary against a process already controlling the local machine;
-- tamper-proof or externally anchored audit logs;
-- proof that supplied evidence is factually true;
-- a production, network, repository, deployment, communication, credential,
-  financial, account, or deletion adapter;
-- natural-language risk classification or arbitrary command execution;
-- a replacement for Context Layer Lab retrieval or a private write-admission
-  protocol.
-
-Freshness means evidence remains within its declared time boundary. It is not a
-truth score. The public synthetic executor proves orchestration semantics, not
-production safety.
-
-## Repository map
-
-```text
-data/       fixed public policy
-docs/       dependency-light local-first console
-evals/      explicit adversarial expectations
-examples/   synthetic diagnostic and fixture metadata
-scripts/    generated-runtime, drift, responsive, and public-safety gates
-src/        contracts and independent governance layers
-test/       unit and protocol contract tests
-```
-
-## Development checks
-
-```bash
-npm run typecheck
-npm test
-npm run eval
-npm run demo:check
-npm run qa:responsive
-npm run public-safety:check
-npm run check
-```
-
-`npm run check` is network-independent after installation. Runtime files and
-the public sample are generated deterministically; drift fails the gate.
-
-Before publishing, configure a private newline-delimited pattern file and
-install the fail-closed pre-push hook:
-
-```bash
-git config publicSafety.patternsFile /path/to/private-patterns
-npm run public-safety:install
-```
-
-The hook scans the current tree and every outgoing commit, so adding and then
-deleting private data in one push is still blocked. CI repeats the generic scan.
-
-## Rollback
-
-Each implementation phase is a separate commit. Revert the smallest phase
-commit rather than resetting unrelated work:
-
-```bash
-git revert <phase-commit>
-```
+- [`docs/architecture.md`](docs/architecture.md) — diagram, contracts, MCP
+  tools, evaluations, threat model, repository map, full CLI reference.
+- [`docs/pair-walkthrough.md`](docs/pair-walkthrough.md) — the real end-to-end
+  command sequence against Context Layer Lab, with real captured output.
+- [`docs/operational-proof.md`](docs/operational-proof.md) — what has actually
+  run, including a private green action and a portable proof packet.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — development checks and how to add an
+  attack or eval case.
 
 ## License
 
