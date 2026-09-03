@@ -104,6 +104,11 @@ identifier, not an approval payload or command string.
 
 ## Evaluations
 
+`npm run demo:attacks` runs 10 named attacks against the real code path, each
+mapped to a public taxonomy entry — see
+[`docs/attack-matrix.md`](attack-matrix.md). See [`docs/adr/`](adr/) for why
+each defended layer is shaped the way it is.
+
 `npm run eval` executes 35 deterministic adversarial cases and compares actual
 structured output with explicit expected output. Coverage includes:
 

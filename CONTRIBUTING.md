@@ -31,8 +31,9 @@ npm run public-safety:install
 
 ## Adding a new attack case
 
-The five named attacks in `npm run demo:attacks` live alongside the deterministic
-eval suite in `evals/`. A new attack case needs:
+The named attacks in `npm run demo:attacks` (currently 10, see
+[`docs/attack-matrix.md`](docs/attack-matrix.md)) live alongside the
+deterministic eval suite in `evals/`. A new attack case needs:
 
 1. A concrete, named failure mode (not a vague "could this be abused" note) —
    see the existing cases in `evals/action-cases.json` for the expected shape.
