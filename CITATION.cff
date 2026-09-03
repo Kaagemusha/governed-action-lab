@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you reference this work, please cite it as below."
+title: "Governed Action Lab"
+abstract: >-
+  A small, inspectable reference implementation separating whether a tool can
+  perform an effect, whether policy allows it, who may authorize it, and
+  whether it was verified, into four independently checkable questions
+  instead of one model decision.
+authors:
+  - family-names: Desjonqueres
+    given-names: Antoine
+license: MIT
+repository-code: "https://github.com/Kaagemusha/governed-action-lab"
+url: "https://kaagemusha.github.io/governed-action-lab/"
+version: 1.0.0
+date-released: "2026-09-03"
+type: software
+keywords:
+  - ai-agents
+  - agent-governance
+  - human-in-the-loop
+  - deterministic
+  - provenance
+  - reference-implementation
