@@ -91,6 +91,9 @@ full threat model.
   command sequence against Context Layer Lab, with real captured output.
 - [`docs/operational-proof.md`](docs/operational-proof.md) — what has actually
   run, including a private green action and a portable proof packet.
+- [`docs/vault-mapping.md`](docs/vault-mapping.md) — where this pattern comes
+  from, in generic terms, and the checklist it gives any write-admission
+  system, private or public.
 - [`docs/how-to-adopt.md`](docs/how-to-adopt.md) — how to put this pattern in
   front of a real agent, and the honest list of what production needs that
   this repo doesn't provide.
