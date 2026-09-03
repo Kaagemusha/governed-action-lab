@@ -3,7 +3,7 @@
 [![CI](https://github.com/Kaagemusha/governed-action-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Kaagemusha/governed-action-lab/actions/workflows/ci.yml)
 ![Node 22](https://img.shields.io/badge/node-22-339933?logo=node.js&logoColor=white)
 ![35/35 eval cases](https://img.shields.io/badge/eval-35%2F35-brightgreen)
-![5/5 attacks held](https://img.shields.io/badge/attacks-5%2F5%20held-brightgreen)
+![10/10 attacks held](https://img.shields.io/badge/attacks-10%2F10%20held-brightgreen)
 
 An agent's proposed action is not authorization. This is a small, inspectable
 reference implementation that keeps *can the tool act*, *does policy allow
@@ -33,8 +33,10 @@ deterministic policy gate, and approvals a model cannot mint for itself.
   stale refusal captured live in [`docs/pair-walkthrough.md`](docs/pair-walkthrough.md).
 - **Refusal produces a receipt too.** Denied and refused actions are just as
   verifiable as completed ones — same schema, same digest check.
-- **35 adversarial cases and 5 named attacks pass against the real code path**,
-  not a mocked one — `npm run eval` and `npm run demo:attacks`.
+- **35 adversarial cases and 10 named attacks, each mapped to OWASP LLM Top 10
+  or MITRE ATLAS, pass against the real code path**, not a mocked one —
+  `npm run eval`, `npm run demo:attacks`, and
+  [`docs/attack-matrix.md`](docs/attack-matrix.md).
 
 ## Quick start
 
@@ -79,10 +81,21 @@ full threat model.
 
 - [`docs/architecture.md`](docs/architecture.md) — diagram, contracts, MCP
   tools, evaluations, threat model, repository map, full CLI reference.
+- [`docs/attack-matrix.md`](docs/attack-matrix.md) — all 10 named attacks,
+  mapped to OWASP LLM Top 10 / MITRE ATLAS / CWE, with the defended layer and
+  test for each.
+- [`docs/adr/`](docs/adr/) — 7 architecture decision records: why a closed
+  catalog, why single-use approvals, why receipts hash before/after state,
+  and more.
 - [`docs/pair-walkthrough.md`](docs/pair-walkthrough.md) — the real end-to-end
   command sequence against Context Layer Lab, with real captured output.
 - [`docs/operational-proof.md`](docs/operational-proof.md) — what has actually
   run, including a private green action and a portable proof packet.
+- [`docs/how-to-adopt.md`](docs/how-to-adopt.md) — how to put this pattern in
+  front of a real agent, and the honest list of what production needs that
+  this repo doesn't provide.
+- [`docs/talk-track.md`](docs/talk-track.md) — the 90-second explanation and
+  three questions a skeptic asks.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — development checks and how to add an
   attack or eval case.
 
