@@ -1,0 +1,472 @@
+{
+  "schemaVersion": "governed-action-proof/v2",
+  "mode": "synthetic_green_inspection",
+  "synthetic": true,
+  "diagnosticSource": {
+    "producer": "Kaagemusha/context-layer-lab",
+    "producerCommit": "400ede829730b525a8f0658aec15f03225aedf25",
+    "producerArtifact": "docs/operational-health.json",
+    "format": "context-layer-diagnostic/v2",
+    "fixtureSha256": "8a95e804b545574e58aeeaa7f2ac79acb277795c7f1f5dd12d269b3879df11be",
+    "diagnosticCanonicalSha256": "73ea0b43cc8668453c915e21a3a1feb373d805c73f1cf86d9a82fdbbbd8d9761"
+  },
+  "diagnostic": {
+    "format": "context-layer-diagnostic/v2",
+    "scenario": {
+      "question": "Are all scheduled automations healthy?",
+      "asOf": "2026-07-28T09:10:00Z",
+      "lanes": [
+        {
+          "id": "nightly-export",
+          "label": "Nightly Export",
+          "dueAt": "2026-07-28T07:55:00Z"
+        },
+        {
+          "id": "docs-build",
+          "label": "Docs Build",
+          "dueAt": "2026-07-28T08:15:00Z"
+        },
+        {
+          "id": "weekly-report",
+          "label": "Weekly Report",
+          "dueAt": "2026-07-28T08:30:00Z"
+        },
+        {
+          "id": "data-sync",
+          "label": "Data Sync",
+          "dueAt": "2026-07-28T17:30:00Z"
+        }
+      ],
+      "summary": {
+        "recordId": "daily-status-dashboard",
+        "observedAt": "2026-07-28T07:30:00Z",
+        "verdict": "healthy"
+      },
+      "receipts": [
+        {
+          "recordId": "nightly-export-receipt",
+          "laneId": "nightly-export",
+          "observedAt": "2026-07-28T08:02:00Z",
+          "outcome": "success"
+        },
+        {
+          "recordId": "docs-build-receipt",
+          "laneId": "docs-build",
+          "observedAt": "2026-07-28T08:40:00Z",
+          "outcome": "failed"
+        },
+        {
+          "recordId": "weekly-report-receipt",
+          "laneId": "weekly-report",
+          "observedAt": "2026-07-28T09:05:00Z",
+          "outcome": "preserved_local"
+        }
+      ]
+    },
+    "assessment": {
+      "question": "Are all scheduled automations healthy?",
+      "asOf": "2026-07-28T09:10:00Z",
+      "naiveVerdict": "healthy",
+      "governedVerdict": "attention",
+      "summaryStale": true,
+      "decisionPrevented": true,
+      "newerEvidenceRecordIds": [
+        "nightly-export-receipt",
+        "docs-build-receipt",
+        "weekly-report-receipt"
+      ],
+      "laneAssessments": [
+        {
+          "id": "nightly-export",
+          "label": "Nightly Export",
+          "state": "healthy",
+          "outcome": "success",
+          "evidenceRecordId": "nightly-export-receipt"
+        },
+        {
+          "id": "docs-build",
+          "label": "Docs Build",
+          "state": "attention",
+          "outcome": "failed",
+          "evidenceRecordId": "docs-build-receipt"
+        },
+        {
+          "id": "weekly-report",
+          "label": "Weekly Report",
+          "state": "attention",
+          "outcome": "preserved_local",
+          "evidenceRecordId": "weekly-report-receipt"
+        },
+        {
+          "id": "data-sync",
+          "label": "Data Sync",
+          "state": "not_due",
+          "outcome": null,
+          "evidenceRecordId": null
+        }
+      ],
+      "evidenceQuality": {
+        "daily-status-dashboard": {
+          "state": "degraded",
+          "issues": [
+            {
+              "code": "stale_record",
+              "severity": "warning",
+              "message": "The record expired at 2026-07-28T07:55:00Z.",
+              "path": "validUntil"
+            }
+          ]
+        },
+        "nightly-export-receipt": {
+          "state": "valid",
+          "issues": []
+        },
+        "docs-build-receipt": {
+          "state": "valid",
+          "issues": []
+        },
+        "weekly-report-receipt": {
+          "state": "valid",
+          "issues": []
+        }
+      }
+    },
+    "records": [
+      {
+        "id": "daily-status-dashboard",
+        "title": "Daily Status Dashboard",
+        "summary": "The 07:30 dashboard snapshot reports every scheduled job healthy.",
+        "content": "The dashboard was accurate when generated. Its freshness window ends when the first scheduled job becomes due.",
+        "tags": [
+          "automation-health",
+          "summary",
+          "dashboard"
+        ],
+        "owner": "Reliability Operations",
+        "updatedAt": "2026-07-28T07:30:00Z",
+        "validUntil": "2026-07-28T07:55:00Z",
+        "sources": [
+          {
+            "id": "dashboard-snapshot-0730",
+            "label": "Dashboard snapshot at 07:30",
+            "url": "https://example.invalid/operations/dashboard-0730",
+            "observedAt": "2026-07-28T07:30:00Z"
+          }
+        ],
+        "claims": [
+          {
+            "text": "All scheduled jobs are healthy.",
+            "sourceIds": [
+              "dashboard-snapshot-0730"
+            ],
+            "operational": {
+              "kind": "summary",
+              "observedAt": "2026-07-28T07:30:00Z",
+              "verdict": "healthy",
+              "lanes": [
+                {
+                  "id": "nightly-export",
+                  "label": "Nightly Export",
+                  "dueAt": "2026-07-28T07:55:00Z"
+                },
+                {
+                  "id": "docs-build",
+                  "label": "Docs Build",
+                  "dueAt": "2026-07-28T08:15:00Z"
+                },
+                {
+                  "id": "weekly-report",
+                  "label": "Weekly Report",
+                  "dueAt": "2026-07-28T08:30:00Z"
+                },
+                {
+                  "id": "data-sync",
+                  "label": "Data Sync",
+                  "dueAt": "2026-07-28T17:30:00Z"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "id": "docs-build-receipt",
+        "title": "Docs Build Run Receipt",
+        "summary": "The scheduled docs build stopped before deployment because its pre-deploy validation failed.",
+        "content": "The prior public version remains unchanged. The failed run is newer and more specific than the earlier status summary.",
+        "tags": [
+          "automation-health",
+          "run-receipt",
+          "docs-build"
+        ],
+        "owner": "Platform Operations",
+        "updatedAt": "2026-07-28T08:40:00Z",
+        "validUntil": "2026-07-29T08:40:00Z",
+        "sources": [
+          {
+            "id": "docs-run-0840",
+            "label": "Docs Build terminal receipt",
+            "url": "https://example.invalid/operations/docs-run-0840",
+            "observedAt": "2026-07-28T08:40:00Z"
+          }
+        ],
+        "claims": [
+          {
+            "text": "The Docs Build run failed before deployment.",
+            "sourceIds": [
+              "docs-run-0840"
+            ],
+            "operational": {
+              "kind": "receipt",
+              "laneId": "docs-build",
+              "observedAt": "2026-07-28T08:40:00Z",
+              "outcome": "failed"
+            }
+          }
+        ]
+      },
+      {
+        "id": "nightly-export-receipt",
+        "title": "Nightly Export Run Receipt",
+        "summary": "The scheduled nightly export completed and delivered successfully.",
+        "content": "The terminal receipt records successful generation and delivery after the job's scheduled window opened.",
+        "tags": [
+          "automation-health",
+          "run-receipt",
+          "nightly-export"
+        ],
+        "owner": "Data Operations",
+        "updatedAt": "2026-07-28T08:02:00Z",
+        "validUntil": "2026-07-29T08:02:00Z",
+        "sources": [
+          {
+            "id": "export-run-0802",
+            "label": "Nightly Export terminal receipt",
+            "url": "https://example.invalid/operations/export-run-0802",
+            "observedAt": "2026-07-28T08:02:00Z"
+          }
+        ],
+        "claims": [
+          {
+            "text": "The Nightly Export run completed successfully.",
+            "sourceIds": [
+              "export-run-0802"
+            ],
+            "operational": {
+              "kind": "receipt",
+              "laneId": "nightly-export",
+              "observedAt": "2026-07-28T08:02:00Z",
+              "outcome": "success"
+            }
+          }
+        ]
+      },
+      {
+        "id": "weekly-report-receipt",
+        "title": "Weekly Report Run Receipt",
+        "summary": "The report run completed, but its output remains preserved locally rather than published.",
+        "content": "Work exists, but the terminal state is not equivalent to successful publication. The job needs attention without discarding its output.",
+        "tags": [
+          "automation-health",
+          "run-receipt",
+          "weekly-report"
+        ],
+        "owner": "Analytics Operations",
+        "updatedAt": "2026-07-28T09:05:00Z",
+        "validUntil": "2026-07-29T09:05:00Z",
+        "sources": [
+          {
+            "id": "report-run-0905",
+            "label": "Weekly Report terminal receipt",
+            "url": "https://example.invalid/operations/report-run-0905",
+            "observedAt": "2026-07-28T09:05:00Z"
+          }
+        ],
+        "claims": [
+          {
+            "text": "The Weekly Report output is preserved locally and is not published.",
+            "sourceIds": [
+              "report-run-0905"
+            ],
+            "operational": {
+              "kind": "receipt",
+              "laneId": "weekly-report",
+              "observedAt": "2026-07-28T09:05:00Z",
+              "outcome": "preserved_local"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "policy": {
+    "schemaVersion": "governed-action-policy/v1",
+    "id": "governed-action-lab-public-policy",
+    "version": "1.3.0",
+    "diagnosticFormat": "context-layer-diagnostic/v2",
+    "acceptedDiagnosticFormats": [
+      "context-layer-diagnostic/v2",
+      "context-layer-diagnostic/v1"
+    ],
+    "maxEvidenceAgeSeconds": 86400,
+    "rules": [
+      {
+        "id": "rule.inspect.read-only",
+        "actionType": "inspect_run_receipt",
+        "adapterId": "governed-automation",
+        "classification": "green",
+        "allowedEnvironment": "read_only",
+        "approvalRequired": false,
+        "maxApprovalLifetimeSeconds": null,
+        "requiredEvidenceOutcome": null,
+        "reversible": false,
+        "verificationRequired": true
+      },
+      {
+        "id": "rule.retry.reversible-sandbox",
+        "actionType": "retry_failed_lane",
+        "adapterId": "governed-automation",
+        "classification": "yellow",
+        "allowedEnvironment": "synthetic_sandbox",
+        "approvalRequired": true,
+        "maxApprovalLifetimeSeconds": 300,
+        "requiredEvidenceOutcome": "failed",
+        "reversible": true,
+        "verificationRequired": true
+      },
+      {
+        "id": "rule.delete.refuse",
+        "actionType": "delete_preserved_output",
+        "adapterId": null,
+        "classification": "red",
+        "allowedEnvironment": null,
+        "approvalRequired": false,
+        "maxApprovalLifetimeSeconds": null,
+        "requiredEvidenceOutcome": "preserved_local",
+        "reversible": false,
+        "verificationRequired": false
+      }
+    ]
+  },
+  "review": {
+    "schemaVersion": "governed-action-review/v2",
+    "diagnostic": {
+      "format": "context-layer-diagnostic/v2",
+      "digest": "73ea0b43cc8668453c915e21a3a1feb373d805c73f1cf86d9a82fdbbbd8d9761",
+      "asOf": "2026-07-28T09:10:00Z"
+    },
+    "id": "review-f50956b496b9b122",
+    "request": {
+      "schemaVersion": "governed-action-request/v1",
+      "id": "request-7f009367cda9ae1d",
+      "idempotencyKey": "action-7f009367cda9ae1d",
+      "proposedAt": "2026-07-28T09:10:00.000Z",
+      "proposer": {
+        "kind": "agent",
+        "id": "portable-proof-generator"
+      },
+      "intent": "Inspect the latest run receipt.",
+      "action": {
+        "type": "inspect_run_receipt",
+        "laneId": "docs-build",
+        "recordId": "docs-build-receipt"
+      },
+      "target": {
+        "adapterId": "governed-automation",
+        "resourceId": "docs-build",
+        "environment": "read_only"
+      },
+      "evidence": {
+        "diagnosticFormat": "context-layer-diagnostic/v2",
+        "diagnosticHash": "73ea0b43cc8668453c915e21a3a1feb373d805c73f1cf86d9a82fdbbbd8d9761",
+        "recordIds": [
+          "docs-build-receipt"
+        ],
+        "asOf": "2026-07-28T09:10:00Z"
+      },
+      "expectedState": {
+        "contentHash": "04e4fa78c4ce3808d83c3648a343b9d8bcae3f5ba19fd47bf70a03422998a3f8"
+      }
+    },
+    "decision": {
+      "schemaVersion": "governed-action-decision/v1",
+      "id": "decision-4a48a290f7adf645",
+      "requestId": "request-7f009367cda9ae1d",
+      "actionDigest": "4a48a290f7adf645b64c62de26e2bd705a22739181d4f5b290b56c0a33cc0dde",
+      "policy": {
+        "id": "governed-action-lab-public-policy",
+        "version": "1.3.0",
+        "manifestDigest": "8c50cd5756e5da687404fc295bf1e17738c81d86ff6b430fda798fb99cca6e7c"
+      },
+      "classification": "green",
+      "disposition": "allow",
+      "reasonCodes": [
+        "ACTION_ALLOWED"
+      ],
+      "reasons": [
+        {
+          "code": "ACTION_ALLOWED",
+          "message": "The catalog action is read-only and may execute automatically.",
+          "evidenceRecordIds": [
+            "docs-build-receipt"
+          ],
+          "policyRuleId": "rule.inspect.read-only"
+        }
+      ],
+      "requirements": [],
+      "decisionAt": "2026-07-28T09:10:00.000Z",
+      "decisionDigest": "c340577fc7925e55fa489930318a39d63e4df39e4435af08ac33c5d021f1f8f0"
+    },
+    "plan": {
+      "effect": "Read receipt docs-build-receipt.",
+      "reversible": false
+    },
+    "status": "READY",
+    "reviewDigest": "3776705fca964b3cc9a6754f79054656b347394203518f044c88cd11a04303f5"
+  },
+  "approvalBoundary": {
+    "required": false,
+    "grant": null
+  },
+  "receipt": {
+    "schemaVersion": "governed-action-receipt/v2",
+    "id": "receipt-portable-green-v2",
+    "actionId": "action-portable-green-v1",
+    "requestId": "request-7f009367cda9ae1d",
+    "actionDigest": "4a48a290f7adf645b64c62de26e2bd705a22739181d4f5b290b56c0a33cc0dde",
+    "decisionDigest": "c340577fc7925e55fa489930318a39d63e4df39e4435af08ac33c5d021f1f8f0",
+    "approvalId": null,
+    "adapter": {
+      "id": "governed-automation",
+      "version": "1.0.0"
+    },
+    "startedAt": "2026-07-28T09:10:00.000Z",
+    "endedAt": "2026-07-28T09:10:00.000Z",
+    "result": "succeeded",
+    "preconditionCheck": {
+      "passed": true,
+      "detail": "Read-only request and evidence remain current."
+    },
+    "effects": [
+      {
+        "kind": "read",
+        "resourceId": "docs-build",
+        "beforeHash": "04e4fa78c4ce3808d83c3648a343b9d8bcae3f5ba19fd47bf70a03422998a3f8",
+        "afterHash": "04e4fa78c4ce3808d83c3648a343b9d8bcae3f5ba19fd47bf70a03422998a3f8"
+      }
+    ],
+    "verification": {
+      "passed": true,
+      "detail": "Read effect did not mutate state."
+    },
+    "compensation": {
+      "supported": false,
+      "authorized": false,
+      "attempted": false,
+      "result": "not_needed"
+    },
+    "previousReceiptId": null,
+    "receiptDigest": "7974ec82bd629b81069bb9297c56234cfb83c137ebc940d0b3e8528a0397dac7"
+  },
+  "packetDigest": "07ae293854ae04fdddc96c9b33716cd32b4c64afeb6b747c93aef485d5776fa8"
+}

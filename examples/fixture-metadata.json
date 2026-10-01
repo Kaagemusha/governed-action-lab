@@ -1,0 +1,10 @@
+{
+  "producer": "Context Layer Lab",
+  "producerCommit": "400ede829730b525a8f0658aec15f03225aedf25",
+  "producerArtifact": "docs/operational-health.json",
+  "format": "context-layer-diagnostic/v1",
+  "fixture": "context-layer-diagnostic.json",
+  "fixtureSha256": "8c8e155eb42ef9dbf601e8fa9815c9f95349627dad0283dd85bbe8f4e98e2d78",
+  "derivation": "v1-projection",
+  "synthetic": true
+}

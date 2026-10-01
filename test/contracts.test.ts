@@ -1,0 +1,126 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+
+import { canonicalJson, digestOmitting, sha256 } from "../src/canonical.js";
+import {
+  actionRequestSchema,
+  policyManifestSchema,
+  type ActionRequest,
+} from "../src/contracts.js";
+
+const digest = "a".repeat(64);
+const request: ActionRequest = {
+  schemaVersion: "governed-action-request/v1",
+  id: "request-1",
+  idempotencyKey: "once-1",
+  proposedAt: "2026-07-28T09:11:00Z",
+  proposer: { kind: "agent", id: "demo-agent" },
+  intent: "Inspect the failed receipt",
+  action: { type: "inspect_run_receipt", laneId: "docs-build", recordId: "docs-build-receipt" },
+  target: { adapterId: "governed-automation", resourceId: "docs-build", environment: "read_only" },
+  evidence: {
+    diagnosticFormat: "context-layer-diagnostic/v1",
+    diagnosticHash: digest,
+    recordIds: ["docs-build-receipt"],
+    asOf: "2026-07-28T09:10:00Z",
+  },
+  expectedState: { contentHash: digest },
+};
+
+test("canonical JSON sorts keys recursively and hashes deterministically", () => {
+  assert.equal(canonicalJson({ b: 2, a: { d: 4, c: 3 } }), '{"a":{"c":3,"d":4},"b":2}');
+  assert.equal(
+    canonicalJson({ "\u00e4": 3, z: 1, "\u00ad": 2 }),
+    '{"z":1,"\u00ad":2,"\u00e4":3}',
+  );
+  assert.equal(sha256(request), sha256(structuredClone(request)));
+  assert.notEqual(sha256(request), sha256({ ...request, intent: "Changed" }));
+});
+
+test("portable SHA-256 matches the standard vector", () => {
+  assert.equal(sha256("abc"), "6cc43f858fbb763301637b5af970e2a46b46f461f27e5a0f41e009c59b827b25");
+});
+
+test("canonical JSON rejects non-JSON values", () => {
+  assert.throws(() => canonicalJson({ bad: undefined }), /Undefined value/);
+  assert.throws(() => canonicalJson({ bad: Number.NaN }), /Non-finite number/);
+  assert.throws(() => canonicalJson({ bad: 1n }), /Non-JSON value/);
+});
+
+test("request schema is strict and reports precise paths", () => {
+  const invalid = actionRequestSchema.safeParse({ ...request, surprise: true });
+  assert.equal(invalid.success, false);
+  if (!invalid.success) assert.deepEqual(invalid.error.issues[0]?.path, []);
+});
+
+test("unknown action and duplicate evidence IDs are rejected", () => {
+  assert.equal(
+    actionRequestSchema.safeParse({ ...request, action: { type: "run_shell", command: "rm" } }).success,
+    false,
+  );
+  assert.equal(
+    actionRequestSchema.safeParse({
+      ...request,
+      evidence: { ...request.evidence, recordIds: ["a", "a"] },
+    }).success,
+    false,
+  );
+});
+
+test("policy rejects duplicate rule IDs and action types", () => {
+  const rule = {
+    id: "same",
+    actionType: "inspect_run_receipt" as const,
+    adapterId: "governed-automation",
+    classification: "green" as const,
+    allowedEnvironment: "read_only" as const,
+    approvalRequired: false,
+    maxApprovalLifetimeSeconds: null,
+    requiredEvidenceOutcome: null,
+    reversible: false,
+    verificationRequired: true,
+  };
+  const parsed = policyManifestSchema.safeParse({
+    schemaVersion: "governed-action-policy/v1",
+    id: "policy",
+    version: "1",
+    diagnosticFormat: "context-layer-diagnostic/v1",
+    maxEvidenceAgeSeconds: 3600,
+    rules: [rule, rule, rule],
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("policy rejects duplicate resource allowlist entries", () => {
+  const rule = {
+    id: "inspect",
+    actionType: "inspect_run_receipt" as const,
+    adapterId: "governed-automation",
+    classification: "green" as const,
+    allowedEnvironment: "read_only" as const,
+    allowedResourceIds: ["one", "one"],
+    approvalRequired: false,
+    maxApprovalLifetimeSeconds: null,
+    requiredEvidenceOutcome: null,
+    reversible: false,
+    verificationRequired: true,
+  };
+  const parsed = policyManifestSchema.safeParse({
+    schemaVersion: "governed-action-policy/v1",
+    id: "policy",
+    version: "1",
+    diagnosticFormat: "context-layer-diagnostic/v1",
+    maxEvidenceAgeSeconds: 3600,
+    rules: [
+      rule,
+      { ...rule, id: "retry", actionType: "retry_failed_lane" },
+      { ...rule, id: "delete", actionType: "delete_preserved_output" },
+    ],
+  });
+  assert.equal(parsed.success, false);
+});
+
+test("digest omission excludes only the requested digest field", () => {
+  const value = { id: "x", digest: "placeholder", nested: { a: 1 } };
+  assert.equal(digestOmitting(value, "digest"), sha256({ id: "x", nested: { a: 1 } }));
+});

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en" data-boot="loading">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0A0A0B">
+<title>Governed Action Lab</title>
+<meta name="description" content="An agent can propose a retry, but cannot approve it itself. Policy gates, human approval, and verifiable receipts, running in your browser.">
+<meta property="og:title" content="Governed Action Lab">
+<meta property="og:description" content="An agent can propose a retry, but cannot approve it itself. Policy gates, human approval, and verifiable receipts, running in your browser.">
+<meta property="og:url" content="https://kaagemusha.github.io/governed-action-lab/">
+<meta property="og:image" content="https://kaagemusha.github.io/governed-action-lab/media/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="./favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./styles.css?v=2">
+<link rel="modulepreload" href="./runtime.js">
+<link rel="modulepreload" href="./sample-data.js">
+</head>
+<body>
+<a class="skip" href="#demo">Skip to the three paths</a>
+<header class="masthead">
+  <div class="wrap masthead-row">
+    <a class="wordmark" href="https://antoine.nutu.net/">Antoine Desjonquères</a>
+    <a class="mast-link mast-back" href="https://antoine.nutu.net/#selected-work">Selected work</a>
+    <nav class="pair" aria-label="The two labs">
+      <a class="pair-item" href="https://kaagemusha.github.io/context-layer-lab/"><span class="mark ok" aria-hidden="true"></span><span class="vh">Lab 1 of 2: </span>Evidence</a>
+      <span class="pair-line" aria-hidden="true"></span>
+      <span class="pair-item" aria-current="page"><span class="mark now" aria-hidden="true"></span><span class="vh">Lab 2 of 2: </span>Action</span>
+    </nav>
+    <a class="mast-link mast-src" href="https://github.com/Kaagemusha/governed-action-lab">Source</a>
+  </div>
+</header>
+
+<main id="main">
+  <section class="intro" aria-labelledby="title">
+    <div class="wrap">
+      <p class="kicker">Reference lab · action</p>
+      <h1 id="title">Governed Action Lab</h1>
+      <p class="lede">An agent can propose a retry, but cannot approve it itself. I built policy gates, human approval, and verifiable receipts.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="demo" tabindex="-1" aria-labelledby="paths-title">
+    <div class="wrap stage-grid">
+      <div class="stage-main">
+        <p class="small" id="clock-line">Scenario clock: 09:10 UTC, 28 Jul 2026, fixed.</p>
+        <p class="small" id="from-line">From <a href="https://kaagemusha.github.io/context-layer-lab/">lab 1</a>: Docs Build failed at 08:40.</p>
+        <h2 id="paths-title">Try the three public paths.</h2>
+        <p class="small" id="paths-sub">The agent proposes three next steps. Policy has checked each one.</p>
+        <p class="small" id="boot-status">Loading the policy engine.</p>
+
+        <fieldset class="paths" aria-labelledby="paths-title">
+          <div class="path" data-path="inspect_run_receipt">
+            <input type="radio" name="path" id="path-read" value="inspect_run_receipt">
+            <label for="path-read"><span class="path-title">Read Docs Build's failed run record</span>
+              <span class="path-outcome"><span class="mark pending" aria-hidden="true"></span><span class="word">Checking policy</span></span></label>
+          </div>
+          <div class="path is-selected" data-path="retry_failed_lane">
+            <input type="radio" name="path" id="path-retry" value="retry_failed_lane" checked>
+            <label for="path-retry"><span class="path-title">Retry Docs Build in the sandbox</span>
+              <span class="path-outcome"><span class="mark pending" aria-hidden="true"></span><span class="word">Checking policy</span></span></label>
+          </div>
+          <div class="path-detail" id="path-detail">
+            <p id="detail-text">Changes state, so policy holds it for a person. You are that person.</p>
+            <button class="btn btn-primary" id="path-action" type="button" aria-disabled="true">Review and approve</button>
+            <div id="detail-extra" hidden></div>
+          </div>
+          <div class="path" data-path="delete_preserved_output">
+            <input type="radio" name="path" id="path-delete" value="delete_preserved_output">
+            <label for="path-delete"><span class="path-title">Delete Weekly Report's unpublished output</span>
+              <span class="path-outcome"><span class="mark pending" aria-hidden="true"></span><span class="word">Checking policy</span></span></label>
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="stage-side">
+        <h3 class="label" id="trace-title">What happens to this proposal</h3>
+        <ol class="trace steps" id="trace" aria-labelledby="trace-title">
+          <li data-step="proposed"><span class="t-time">Proposed</span><span class="mark pending" aria-hidden="true"></span><span class="t-body"><span class="t-label">By the agent, at 09:10 on the scenario clock.</span></span></li>
+          <li data-step="policy"><span class="t-time">Policy</span><span class="mark pending" aria-hidden="true"></span><span class="t-body"><span class="t-label">Checking policy.</span></span></li>
+          <li data-step="approval"><span class="t-time">Approval</span><span class="mark pending" aria-hidden="true"></span><span class="t-body"><span class="t-label">Not yet.</span></span></li>
+          <li data-step="runs"><span class="t-time">Runs</span><span class="mark pending" aria-hidden="true"></span><span class="t-body"><span class="t-label">Not yet.</span></span></li>
+          <li data-step="record"><span class="t-time">Record</span><span class="mark pending" aria-hidden="true"></span><span class="t-body"><span class="t-label">Not yet.</span></span></li>
+        </ol>
+        <div id="record-area" class="record-area"></div>
+        <details id="request-details"><summary>The exact request the agent sent</summary><div id="request-body"><p class="small">The request appears once the policy engine has loaded.</p></div></details>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap quiet">
+    <p class="small">Synthetic sandbox in your browser. Not production authorization. Nothing is uploaded.</p>
+  </div>
+  <noscript><p class="wrap noscript">This lab runs its policy in your browser with JavaScript. Without it, <a href="https://github.com/Kaagemusha/governed-action-lab#readme">read the walkthrough on GitHub</a>.</p></noscript>
+
+  <section class="section" id="rules" aria-labelledby="rules-title">
+    <div class="wrap spread">
+      <h2 id="rules-title">Three rules, written down.</h2>
+      <div class="section-body" data-slot="rules">
+        <p class="lead-p">The policy is a small file, not a model. These rows are read from the file this page uses.</p>
+        <p class="small reserve" id="rules-reserve">The rules appear once the policy engine has loaded.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="attacks" aria-labelledby="attacks-title">
+    <div class="wrap spread">
+      <h2 id="attacks-title">Eleven attacks, all held.</h2>
+      <div class="section-body">
+        <p class="lead-p">Each runs against the real policy, approval, executor, and receipt code in CI on every change. They do not run in this page.</p>
+        <table class="stack attacks-table">
+          <thead><tr><th scope="col">Attack</th><th scope="col">Result</th><th scope="col">Weakness class</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><span class="attack-name">Swap the retry payload after approval</span><code>ARGUMENT_SUBSTITUTION</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">OWASP LLM06:2025, CWE-345</td></tr>
+            <tr><th scope="row"><span class="attack-name">Use the same approval twice</span><code>APPROVAL_REPLAY</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">OWASP LLM06:2025, CWE-294</td></tr>
+            <tr><th scope="row"><span class="attack-name">Run another agent's request with an approval</span><code>CONFUSED_DEPUTY</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">OWASP LLM06:2025, MITRE ATLAS AML.T0053, CWE-441</td></tr>
+            <tr><th scope="row"><span class="attack-name">Change the target between check and run</span><code>TOCTOU_CHANGED_STATE</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">CWE-367</td></tr>
+            <tr><th scope="row"><span class="attack-name">Edit a receipt after the fact</span><code>RECEIPT_CONTENT_TAMPERING</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Detected</span></span></td><td data-label="Weakness class">CWE-345</td></tr>
+            <tr><th scope="row"><span class="attack-name">Use an approval after it expires</span><code>EXPIRED_APPROVAL_REUSE</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">CWE-613</td></tr>
+            <tr><th scope="row"><span class="attack-name">Name the job with a look-alike character</span><code>CANONICALIZATION_BYPASS</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">OWASP LLM01:2025, CWE-289, CWE-706</td></tr>
+            <tr><th scope="row"><span class="attack-name">Point an approval at different evidence</span><code>APPROVAL_SCOPE_WIDENING</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">OWASP LLM06:2025, CWE-345</td></tr>
+            <tr><th scope="row"><span class="attack-name">Edit the policy after it was trusted</span><code>POLICY_MANIFEST_TAMPERING</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">OWASP LLM03:2025, CWE-345</td></tr>
+            <tr><th scope="row"><span class="attack-name">Reuse the public policy's name with new rules</span><code>PUBLIC_POLICY_IMPERSONATION</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">OWASP LLM03:2025, CWE-290, CWE-345</td></tr>
+            <tr><th scope="row"><span class="attack-name">Reuse a request key for a different action</span><code>IDEMPOTENCY_KEY_COLLISION</code></th><td data-label="Result"><span class="state"><span class="mark ok" aria-hidden="true"></span><span class="word ok">Denied</span></span></td><td data-label="Weakness class">CWE-694</td></tr>
+          </tbody>
+        </table>
+        <p class="small foot">A weakness class names what the attack would exploit without this layer. It is not a certification. Reproduce with <code>npm run demo:attacks</code>. <a href="https://github.com/Kaagemusha/governed-action-lab/blob/main/docs/attack-matrix.md">Read the attack matrix</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="proof" aria-labelledby="proof-title">
+    <div class="wrap spread">
+      <h2 id="proof-title">What this proves, and what it does not.</h2>
+      <div class="section-body">
+        <p>It proves deterministic policy can allow, hold, or refuse typed synthetic actions, bind one human approval to one exact request, and leave records whose digests you can recompute.</p>
+        <p>It does not provide production authorization, tamper-proof audit logs, or machine isolation, and it cannot make bad evidence true. Everything here is synthetic and runs in a browser sandbox.</p>
+        <table class="stack ledger">
+          <thead><tr><th scope="col">Claim</th><th scope="col">How to check it</th></tr></thead>
+          <tbody>
+            <tr><td data-label="Claim">36 of 36 evaluations pass: 26 adversarial, 3 fault injection, 7 intended path.</td><td data-label="How to check it">Run <code>npm run eval</code> in the repository. CI runs it on every change.</td></tr>
+            <tr><td data-label="Claim">11 of 11 named attacks held.</td><td data-label="How to check it">The table above, or <code>npm run demo:attacks</code>.</td></tr>
+            <tr><td data-label="Claim">The agent cannot approve itself.</td><td data-label="How to check it">Its MCP server exposes 5 tools, and none of them creates an approval. See the <a href="https://github.com/Kaagemusha/governed-action-lab">source</a>.</td></tr>
+            <tr><td data-label="Claim">An approval works once and expires.</td><td data-label="How to check it">Enforced and tested in CI (<code>APPROVAL_REPLAY</code>, <code>EXPIRED_APPROVAL_REUSE</code>). This page only simulates it.</td></tr>
+            <tr><td data-label="Claim">Receipts are verifiable.</td><td data-label="How to check it">Change one field on a receipt above. Or save it and run <code>npm run action -- verify-receipt --receipt &lt;file&gt;</code>.</td></tr>
+            <tr><td data-label="Claim">Nothing leaves your browser.</td><td data-label="How to check it">Open the network panel while you use this page. After it loads, nothing is requested.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="sub">
+          <h3 id="proof-file-title">The proof file.</h3>
+          <p>One complete read-only run, frozen so anyone can check it. It shows the run is internally consistent. It does not prove who produced it or show any external action.</p>
+          <p><a class="btn btn-secondary" href="./governed-action-proof.json" download>Download the proof file (JSON)</a></p>
+          <pre><code>npm run action -- verify-proof --proof docs/governed-action-proof.json</code></pre>
+        </div>
+
+        <div class="sub" id="check-file">
+          <h3 id="check-title">Check a file.</h3>
+          <p>Open a Context Layer diagnostic, this lab's proof file, or a receipt you saved. It is read in this tab only. A diagnostic or proof file recomputes all three paths; decisions inside the file are never trusted.</p>
+          <p class="small">No file? Get <a href="https://kaagemusha.github.io/context-layer-lab/operational-health.json" download>lab 1's diagnostic (JSON)</a>.</p>
+          <div class="file-actions">
+            <button class="btn btn-secondary" id="load-file" type="button">Check a file</button>
+            <button class="btn-text" id="back-to-sample" type="button" hidden>Back to the sample</button>
+            <input type="file" id="file-input" accept=".json,application/json" hidden>
+          </div>
+          <p class="small" id="file-status">Showing the public sample.</p>
+          <p class="file-error" id="file-error" role="alert" hidden></p>
+        </div>
+
+        <div class="sub">
+          <h3 id="run-title">Run it yourself.</h3>
+          <pre><code>git clone https://github.com/Kaagemusha/governed-action-lab
+cd governed-action-lab
+npm ci
+npm run eval
+npm run demo:attacks</code></pre>
+        </div>
+        <p class="small">Version 1.2.0, released 1 Oct 2026.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="before" aria-labelledby="before-title">
+    <div class="wrap spread">
+      <h2 id="before-title">Before this: what is true now.</h2>
+      <div class="section-body">
+        <p>Lab 1 of 2 decides whether the scheduled jobs are healthy before anyone acts. This lab starts from its answer.</p>
+        <p class="next-action"><a class="btn btn-ghost" href="https://kaagemusha.github.io/context-layer-lab/">Open Context Layer Lab</a></p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <ul class="footer-dir" role="list">
+      <li class="dir"><span class="dir-label">Back to</span><span class="dir-leader" aria-hidden="true"></span><a class="dir-value" href="https://antoine.nutu.net/#selected-work">Selected work</a></li>
+      <li class="dir"><span class="dir-label">Other lab</span><span class="dir-leader" aria-hidden="true"></span><a class="dir-value" href="https://kaagemusha.github.io/context-layer-lab/">Context Layer Lab</a></li>
+      <li class="dir"><span class="dir-label">Source</span><span class="dir-leader" aria-hidden="true"></span><a class="dir-value" href="https://github.com/Kaagemusha/governed-action-lab">github.com/Kaagemusha/governed-action-lab</a></li>
+      <li class="dir"><span class="dir-label">Attack matrix</span><span class="dir-leader" aria-hidden="true"></span><a class="dir-value" href="https://github.com/Kaagemusha/governed-action-lab/blob/main/docs/attack-matrix.md">11 of 11 held</a></li>
+      <li class="dir"><span class="dir-label">Version</span><span class="dir-leader" aria-hidden="true"></span><a class="dir-value" href="https://github.com/Kaagemusha/governed-action-lab/blob/main/CHANGELOG.md">1.2.0, released 1 Oct 2026</a></li>
+      <li class="dir"><span class="dir-label">Contact</span><span class="dir-leader" aria-hidden="true"></span><a class="dir-value" href="https://antoine.nutu.net/#contact">antoine.nutu.net</a></li>
+    </ul>
+    <div class="colophon">
+      <img class="colophon-mark" src="./favicon.svg" alt="" width="28" height="28">
+      <p>Governed Action Lab is a public reference lab by Antoine Desjonquères. MIT license.</p>
+      <p class="small">Synthetic data. Runs in your browser. Nothing is uploaded.</p>
+    </div>
+  </div>
+</footer>
+
+<dialog id="approval-dialog" aria-labelledby="approval-title">
+  <form method="dialog">
+    <h2 id="approval-title">Approve this exact retry?</h2>
+    <p class="dialog-lead">You are the human approver. The agent cannot press this button, and none of its tools can create an approval.</p>
+    <dl class="approval-facts" id="approval-facts"></dl>
+    <p class="small dialog-note">In a real deployment this approval lives in a separate app the agent cannot reach. Here it is simulated in your browser.</p>
+    <div class="dialog-actions">
+      <button class="btn btn-secondary" type="submit" value="cancel" id="approve-cancel" autofocus>Cancel</button>
+      <button class="btn btn-primary" type="submit" value="approve" id="approve-confirm">Approve this retry</button>
+    </div>
+  </form>
+</dialog>
+
+<p id="announcer" class="vh" role="status" aria-live="polite"></p>
+<script>
+  setTimeout(function () {
+    if (document.documentElement.dataset.boot === "loading") {
+      var s = document.getElementById("boot-status");
+      if (s) s.textContent = "Still loading. Reload the page if nothing changes.";
+    }
+  }, 6000);
+</script>
+<script type="module" src="./app.js?v=2"></script>
+</body>
+</html>

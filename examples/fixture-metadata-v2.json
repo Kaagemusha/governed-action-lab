@@ -1,0 +1,8 @@
+{
+  "producer": "Kaagemusha/context-layer-lab",
+  "producerCommit": "400ede829730b525a8f0658aec15f03225aedf25",
+  "producerArtifact": "docs/operational-health.json",
+  "format": "context-layer-diagnostic/v2",
+  "fixture": "context-layer-diagnostic-v2.json",
+  "fixtureSha256": "8a95e804b545574e58aeeaa7f2ac79acb277795c7f1f5dd12d269b3879df11be"
+}

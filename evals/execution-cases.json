@@ -1,0 +1,12 @@
+[
+  {"id":"10-evidence-expires","kind":"adversarial","expected":{"code":"stale","effects":0}},
+  {"id":"11-newer-success","kind":"adversarial","expected":{"code":"context_rejection"}},
+  {"id":"22-idempotency","kind":"intended","expected":{"code":"same_receipt","adapterCalls":1}},
+  {"id":"23-fail-before-effect","kind":"fault","expected":{"code":"failed","effects":0}},
+  {"id":"24-fail-after-effect","kind":"fault","expected":{"code":"compensated","restored":true}},
+  {"id":"25-verification-mismatch","kind":"fault","expected":{"code":"compensated","restored":true}},
+  {"id":"26-tampered-receipt","kind":"adversarial","expected":{"code":"invalid"}},
+  {"id":"31-policy-change","kind":"adversarial","expected":{"code":"refused","effects":0}},
+  {"id":"35-idempotency-conflict","kind":"adversarial","expected":{"code":"idempotency_conflict","adapterCalls":1,"receipts":1}},
+  {"id":"36-public-policy-impersonation","kind":"adversarial","expected":{"code":"refused","effects":0}}
+]
