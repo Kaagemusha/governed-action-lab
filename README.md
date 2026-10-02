@@ -109,10 +109,9 @@ full threat model.
 
 ## How it was built
 
-Built with AI coding agents, Claude Code among them, under my direction. I
-set the design and approve every release; the agents wrote and cross-reviewed
-much of the code. Every change passes CI and review before release, and commits
-credit the agent that contributed.
+Built with Claude Code and Codex under my direction. I set the design and
+approve every release; the two agents wrote and cross-reviewed much of the
+code. Every change passes CI and review before release.
 
 ## License
 
