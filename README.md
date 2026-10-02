@@ -107,6 +107,13 @@ full threat model.
 - [`docs/pair-walkthrough.md`](docs/pair-walkthrough.md): the end-to-end
   command sequence against Context Layer Lab, with captured output.
 
+## How it was built
+
+Built with AI coding agents, Claude Code among them, under my direction. I
+set the design and approve every release; the agents wrote and cross-reviewed
+much of the code. Every change passes CI and review before release, and commits
+credit the agent that contributed.
+
 ## License
 
 MIT
