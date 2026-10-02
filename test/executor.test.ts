@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -22,6 +23,7 @@ import {
 import { actionDigest, evaluateAction } from "../src/policy.js";
 import { FileReceiptStore, MemoryReceiptStore, type ClaimCheckpoint, type ReceiptStore } from "../src/store.js";
 
+const sha256Hex = (value: string) => createHash("sha256").update(value).digest("hex");
 const policy = JSON.parse(await readFile("data/policy.json", "utf8")) as PolicyManifest;
 const targetHash = "a".repeat(64);
 const evidence = {
@@ -497,6 +499,106 @@ test("an effectful failed receipt is replayed without a second effect", async ()
   assert.equal(first.result, "failed");
   assert.equal(first.effects.length, 1);
   assert.equal(replay.id, first.id);
+  assert.equal(state.adapter.executeCalls, 1);
+});
+
+test("file store keeps both receipts when two stores append different keys at once", async () => {
+  const path = join(await mkdtemp(join(tmpdir(), "governed-receipts-concurrent-")), "receipts.json");
+  const runs = await Promise.all(["left", "right"].map(async (side) => {
+    const action = actionRequestSchema.parse({ ...request(), id: `request-${side}`, idempotencyKey: `retry-${side}` });
+    const state = await setup(action, new FileReceiptStore(path));
+    await new OperatorApprovalProvider(state.approvals, clock).issue(action, state.decision, "operator", true);
+    return { action, state, dependencies: { ...state, policy, evidence, clock } };
+  }));
+  const receipts = await Promise.all(runs.map(({ action, state, dependencies }) =>
+    executeGovernedAction(action, state.decision, dependencies)));
+  assert.deepEqual(receipts.map((receipt) => receipt.result), ["succeeded", "succeeded"]);
+  const stored = await new FileReceiptStore(path).list();
+  assert.deepEqual(stored.map((receipt) => receipt.id).sort(), receipts.map((receipt) => receipt.id).sort());
+  for (const [index, { action, state, dependencies }] of runs.entries()) {
+    const replay = await executeGovernedAction(action, state.decision, dependencies);
+    assert.equal(replay.id, receipts[index]!.id);
+    assert.equal(state.adapter.executeCalls, 1);
+  }
+});
+
+test("file store keeps the claim when a receipt cannot be saved, so the effect is not repeated", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "governed-receipts-unwritable-"));
+  const path = join(directory, "receipts.json");
+  await writeFile(`${path}.receipts`, "not a directory\n");
+  const action = request();
+  const state = await setup(action, new FileReceiptStore(path));
+  await new OperatorApprovalProvider(state.approvals, clock).issue(action, state.decision, "operator", true);
+  const dependencies = { ...state, policy, evidence, clock };
+  await assert.rejects(executeGovernedAction(action, state.decision, dependencies));
+  assert.equal(state.adapter.executeCalls, 1);
+  const claim = await new FileReceiptStore(path).claim(action.idempotencyKey, actionDigest(action));
+  assert.equal(claim.status, "in_progress", "the checkpointed claim survives the failed write");
+  await assert.rejects(executeGovernedAction(action, state.decision, dependencies), IdempotencyStateError);
+  assert.equal(state.adapter.executeCalls, 1);
+});
+
+test("file store still replays receipts from a combined receipts.json written by 1.2.1", async () => {
+  const action = request();
+  const memory = await setup(action);
+  await new OperatorApprovalProvider(memory.approvals, clock).issue(action, memory.decision, "operator", true);
+  const first = await executeGovernedAction(action, memory.decision, { ...memory, policy, evidence, clock });
+  const path = join(await mkdtemp(join(tmpdir(), "governed-receipts-legacy-")), "receipts.json");
+  await writeFile(path, `${JSON.stringify({ receipts: [first], idempotency: { [action.idempotencyKey]: first.id } })}\n`);
+  const store = new FileReceiptStore(path);
+  const claim = await store.claim(action.idempotencyKey, actionDigest(action));
+  assert.equal(claim.status, "replay");
+  assert.equal(claim.status === "replay" && claim.receipt.id, first.id);
+  assert.deepEqual((await store.list()).map((receipt) => receipt.id), [first.id]);
+});
+
+test("file store returns a receipt saved between a retry's replay lookup and its claim", async () => {
+  const action = request();
+  const memory = await setup(action);
+  await new OperatorApprovalProvider(memory.approvals, clock).issue(action, memory.decision, "operator", true);
+  const receipt = await executeGovernedAction(action, memory.decision, { ...memory, policy, evidence, clock });
+  const path = join(await mkdtemp(join(tmpdir(), "governed-receipts-race-")), "receipts.json");
+  const owner = new FileReceiptStore(path);
+  const retry = new FileReceiptStore(path);
+  const digest = actionDigest(action);
+  assert.equal((await owner.claim(action.idempotencyKey, digest)).status, "claimed");
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  const lookup = (retry as unknown as { replayReceipt(key: string): Promise<unknown> }).replayReceipt.bind(retry);
+  let lookedUp!: () => void;
+  const firstLookupDone = new Promise<void>((resolve) => { lookedUp = resolve; });
+  let first = true;
+  (retry as unknown as { replayReceipt(key: string): Promise<unknown> }).replayReceipt = async (key: string) => {
+    const found = await lookup(key);
+    if (first) {
+      first = false;
+      assert.equal(found, null, "the first lookup must run before the owner's receipt exists");
+      lookedUp();
+      await gate;
+    }
+    return found;
+  };
+  const pending = retry.claim(action.idempotencyKey, digest);
+  await firstLookupDone;
+  await owner.append(receipt, action.idempotencyKey);
+  release();
+  const claim = await pending;
+  assert.equal(claim.status, "replay");
+  assert.equal(claim.status === "replay" && claim.receipt.id, receipt.id);
+});
+
+test("file store fails closed when a replay mapping cannot be read", async () => {
+  const path = join(await mkdtemp(join(tmpdir(), "governed-receipts-corrupt-")), "receipts.json");
+  const action = request();
+  const state = await setup(action, new FileReceiptStore(path));
+  await new OperatorApprovalProvider(state.approvals, clock).issue(action, state.decision, "operator", true);
+  const dependencies = { ...state, policy, evidence, clock };
+  assert.equal((await executeGovernedAction(action, state.decision, dependencies)).result, "succeeded");
+  const mapping = join(`${path}.idempotency`, `${sha256Hex(action.idempotencyKey)}.receipt`);
+  await writeFile(mapping, "{");
+  await assert.rejects(new FileReceiptStore(path).claim(action.idempotencyKey, actionDigest(action)));
+  await writeFile(mapping, `${JSON.stringify({ receiptId: "receipt-that-does-not-exist" })}\n`);
+  await assert.rejects(new FileReceiptStore(path).claim(action.idempotencyKey, actionDigest(action)), /missing/);
   assert.equal(state.adapter.executeCalls, 1);
 });
 

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import { executionReceiptSchema, type ApprovalGrant, type ExecutionReceipt } from "./contracts.js";
@@ -120,6 +120,18 @@ function newActiveClaim(actionDigest: string, checkpoint: ClaimCheckpoint | null
   };
 }
 
+// Only a missing file means "nothing stored yet"; any other read error must
+// fail closed, or it could look like the absence of a receipt and allow a
+// second execution.
+async function readIfPresent(path: string): Promise<string | null> {
+  try {
+    return await readFile(path, "utf8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+}
+
 function processIsAlive(pid: number): boolean {
   try {
     process.kill(pid, 0);
@@ -129,24 +141,53 @@ function processIsAlive(pid: number): boolean {
   }
 }
 
+// Each receipt and each replay mapping is its own file, so processes that
+// append receipts for different keys never rewrite a shared file and cannot
+// lose each other's records. A combined file at `path` written by 1.2.1 and
+// earlier is still read, so its receipts keep replaying.
 export class FileReceiptStore implements ReceiptStore {
   constructor(readonly path: string) {}
 
-  private async read(): Promise<StoreData> {
+  private receiptDirectory(): string {
+    return `${this.path}.receipts`;
+  }
+
+  private replayPath(idempotencyKey: string): string {
+    return join(this.bindingDirectory(), `${this.token(idempotencyKey)}.receipt`);
+  }
+
+  private async writeAtomic(path: string, content: string): Promise<void> {
+    const temporary = join(dirname(path), `.${randomUUID()}.tmp`);
+    await writeFile(temporary, content, { mode: 0o600 });
+    await rename(temporary, path);
+  }
+
+  private async readReceiptFiles(): Promise<ExecutionReceipt[]> {
+    let names: string[];
+    try {
+      names = await readdir(this.receiptDirectory());
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
+    }
+    const receipts = await Promise.all(
+      names
+        .filter((name) => name.endsWith(".json") && !name.startsWith("."))
+        .map(async (name) =>
+          executionReceiptSchema.parse(JSON.parse(await readFile(join(this.receiptDirectory(), name), "utf8")))),
+    );
+    return receipts.sort((left, right) =>
+      left.endedAt.localeCompare(right.endedAt) || left.id.localeCompare(right.id));
+  }
+
+  private async readLegacy(): Promise<StoreData> {
     const parsed = JSON.parse(
-      await readFile(this.path, "utf8").catch(() => '{"receipts":[],"idempotency":{}}'),
+      (await readIfPresent(this.path)) ?? '{"receipts":[],"idempotency":{}}',
     ) as StoreData;
     return {
       receipts: parsed.receipts.map((receipt) => executionReceiptSchema.parse(receipt)),
       idempotency: parsed.idempotency,
     };
-  }
-
-  private async write(value: StoreData): Promise<void> {
-    await mkdir(dirname(this.path), { recursive: true, mode: 0o700 });
-    const temporary = join(dirname(this.path), `.${randomUUID()}.tmp`);
-    await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
-    await rename(temporary, this.path);
   }
 
   private token(idempotencyKey: string): string {
@@ -223,9 +264,7 @@ export class FileReceiptStore implements ReceiptStore {
       }
     }
 
-    const data = await this.read();
-    const receiptId = data.idempotency[idempotencyKey];
-    const receipt = data.receipts.find((candidate) => candidate.id === receiptId);
+    const receipt = await this.replayReceipt(idempotencyKey);
     if (receipt) return { status: "replay", receipt };
 
     const activePath = this.activePath(idempotencyKey);
@@ -249,6 +288,16 @@ export class FileReceiptStore implements ReceiptStore {
         return { status: "in_progress" };
       }
       throw error;
+    }
+    // The owner may have saved its receipt and released its claim between the
+    // replay lookup above and this claim; look again before executing.
+    const late = await this.replayReceipt(idempotencyKey).catch(async (error: unknown) => {
+      await unlink(activePath).catch(() => undefined);
+      throw error;
+    });
+    if (late) {
+      await unlink(activePath).catch(() => undefined);
+      return { status: "replay", receipt: late };
     }
     return { status: "claimed", claimId: active.claimId };
   }
@@ -296,22 +345,42 @@ export class FileReceiptStore implements ReceiptStore {
     }
   }
 
-  async append(receipt: ExecutionReceipt, idempotencyKey: string): Promise<void> {
-    try {
-      const binding = await this.readBinding(this.bindingPath(idempotencyKey));
-      if (
-        binding.idempotencyKey !== idempotencyKey ||
-        binding.actionDigest !== receipt.actionDigest
-      ) {
-        throw new Error("Receipt action digest does not match its idempotency binding.");
-      }
-      const data = await this.read();
-      data.receipts.push(receipt);
-      if (replayable(receipt)) data.idempotency[idempotencyKey] = receipt.id;
-      await this.write(data);
-    } finally {
-      await unlink(this.activePath(idempotencyKey)).catch(() => undefined);
+  private async replayReceipt(idempotencyKey: string): Promise<ExecutionReceipt | null> {
+    const text = await readIfPresent(this.replayPath(idempotencyKey));
+    let receiptId: string | undefined;
+    if (text !== null) {
+      const mapped = (JSON.parse(text) as { receiptId?: unknown }).receiptId;
+      if (typeof mapped !== "string") throw new Error("Idempotency replay mapping is unreadable.");
+      receiptId = mapped;
+    } else {
+      receiptId = (await this.readLegacy()).idempotency[idempotencyKey];
     }
+    if (receiptId === undefined) return null;
+    const receipt = (await this.list()).find((candidate) => candidate.id === receiptId);
+    if (!receipt) throw new Error("Idempotency replay mapping names a receipt that is missing.");
+    return receipt;
+  }
+
+  // The active claim, and with it any recovery checkpoint, is removed only
+  // after the receipt and its replay mapping are durable. If persistence
+  // fails the claim stays, so the effect is reconciled by orphan recovery
+  // instead of being forgotten and repeated.
+  async append(receipt: ExecutionReceipt, idempotencyKey: string): Promise<void> {
+    const binding = await this.readBinding(this.bindingPath(idempotencyKey));
+    if (
+      binding.idempotencyKey !== idempotencyKey ||
+      binding.actionDigest !== receipt.actionDigest
+    ) {
+      throw new Error("Receipt action digest does not match its idempotency binding.");
+    }
+    const parsed = executionReceiptSchema.parse(receipt);
+    await mkdir(this.receiptDirectory(), { recursive: true, mode: 0o700 });
+    const receiptName = `${createHash("sha256").update(parsed.id).digest("hex")}.json`;
+    await this.writeAtomic(join(this.receiptDirectory(), receiptName), `${JSON.stringify(parsed, null, 2)}\n`);
+    if (replayable(parsed)) {
+      await this.writeAtomic(this.replayPath(idempotencyKey), `${JSON.stringify({ receiptId: parsed.id })}\n`);
+    }
+    await unlink(this.activePath(idempotencyKey)).catch(() => undefined);
   }
 
   async release(idempotencyKey: string, actionDigest: string): Promise<void> {
@@ -324,6 +393,8 @@ export class FileReceiptStore implements ReceiptStore {
   }
 
   async list(): Promise<ExecutionReceipt[]> {
-    return (await this.read()).receipts;
+    const legacy = (await this.readLegacy()).receipts;
+    const seen = new Set(legacy.map((receipt) => receipt.id));
+    return [...legacy, ...(await this.readReceiptFiles()).filter((receipt) => !seen.has(receipt.id))];
   }
 }

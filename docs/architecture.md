@@ -88,6 +88,15 @@ recovery demonstration, not a distributed lease protocol. PID reuse can
 conservatively leave a dead claim blocked; it cannot authorize takeover or a
 duplicate effect.
 
+The file store writes each receipt and each idempotency replay mapping to its
+own file, so processes appending receipts for different keys never rewrite a
+shared file. It removes a claim, and the recovery checkpoint inside it, only
+after the receipt and its replay mapping are saved: if saving fails, the claim
+stays and the effect is reconciled by recovery instead of being forgotten and
+run again. A new claim looks for a replay receipt again after it is acquired,
+and only a missing file counts as "nothing stored": any other read error fails
+closed. A combined `receipts.json` from 1.2.1 or earlier is still read.
+
 Bundled policy `1.3.0` makes diagnostic v2 the public default and explicitly
 retains v1 as a compatible evidence format. Policy `1.2.0` was the dual-read,
 v1-default transition; legacy policy `1.1.0` remains v1-only. Changing the

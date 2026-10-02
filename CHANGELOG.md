@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.2 (2026-10-02)
+
+**Receipt store fixes.** Four defects in `FileReceiptStore`, found in
+review, could each let an effect that had already happened run again:
+
+- processes appending receipts for different keys at the same time could
+  overwrite each other's receipts and replay mappings;
+- a failed receipt write deleted the claim's recovery checkpoint;
+- a retry could miss a receipt saved between its replay lookup and its claim;
+- an unreadable replay mapping was treated as no receipt at all.
+
+Each receipt and each replay mapping is now its own file; a claim is removed
+only after its receipt is saved, and a failed save leaves it for crash
+recovery; a new claim checks for a replay again before executing; and only a
+missing file counts as "nothing stored", so other read errors fail closed. A
+combined `receipts.json` from 1.2.1 or earlier is still read and replayed.
+Five regression tests cover these cases; four of them fail on 1.2.1.
+
 ## 1.2.1 (2026-10-02)
 
 **Console redesign.** The public console now matches antoine.nutu.net: dark
