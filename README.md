@@ -5,6 +5,8 @@
 ![36/36 eval cases](https://img.shields.io/badge/eval-36%2F36-brightgreen)
 ![11/11 attacks held](https://img.shields.io/badge/attacks-11%2F11%20held-brightgreen)
 
+[![The live console: the retry path approved once by a human, with its receipt and digest check](docs/media/og.png)](https://kaagemusha.github.io/governed-action-lab/)
+
 An agent's proposed action is not authorization. This is a small, inspectable
 reference implementation that keeps *can the tool act*, *does policy allow
 it*, *who authorizes it*, and *was it verified* as four separate,
