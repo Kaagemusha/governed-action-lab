@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.2.3 (2026-10-02)
+
+**No console warning under the security policy.** Zod probed `eval` on load,
+which the page's Content Security Policy blocks; the page still worked but
+logged a violation on every visit. The browser bundle now runs Zod in jitless
+mode, so it never makes the probe.
+
+**Browser check.** The headless-Chrome check now also fails if the page
+reports a Content Security Policy violation or an uncaught error.
+
+**Counts that cannot drift.** A new check recounts the evals and named attacks and
+fails if the README badges or the console state different numbers.
+
 ## 1.2.2 (2026-10-02)
 
 **Receipt store fixes.** Four defects in `FileReceiptStore`, found in

@@ -1,3 +1,4 @@
+import "./browser-jitless.js";
 import { digestOmitting, sha256 } from "./canonical.js";
 import {
   RECEIPT_VERSION,

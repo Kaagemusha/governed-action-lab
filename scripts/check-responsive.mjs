@@ -128,6 +128,21 @@ try {
   }
 
   await send("Page.enable");
+  // Fail on anything the page itself reports as broken: a Content Security
+  // Policy violation or an uncaught error, from the first script onwards.
+  await send("Page.addScriptToEvaluateOnNewDocument", {
+    source: `window.__qaProblems = [];
+      document.addEventListener("securitypolicyviolation", (event) =>
+        window.__qaProblems.push("CSP blocked " + event.violatedDirective + " " + event.blockedURI));
+      window.addEventListener("error", (event) => window.__qaProblems.push("error: " + event.message));
+      window.addEventListener("unhandledrejection", (event) => window.__qaProblems.push("rejection: " + event.reason));`,
+  });
+  const assertNoProblems = async (label) => {
+    const problems = await send("Runtime.evaluate", { expression: "window.__qaProblems", returnByValue: true });
+    if ((problems.result.value ?? []).length > 0) {
+      throw new Error(`${label}: the page reported problems: ${JSON.stringify(problems.result.value)}`);
+    }
+  };
   for (const width of [320, 375, 390]) {
     await send("Emulation.setDeviceMetricsOverride", {
       width,
@@ -184,6 +199,7 @@ try {
     await act(`${click("back-to-sample")}; ${click("path-retry")}; ${click("path-action")}`);
     await measure("approval dialog open");
     await act("document.getElementById('approval-dialog').close()");
+    await assertNoProblems(`${width}px`);
     console.log(`PASS responsive ${width}px`);
     if (width === 390) {
       const heightResult = await send("Runtime.evaluate", {

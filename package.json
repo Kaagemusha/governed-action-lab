@@ -1,6 +1,6 @@
 {
   "name": "governed-action-lab",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "A deterministic reference implementation for governing agent actions.",
   "type": "module",
   "private": true,
@@ -31,8 +31,9 @@
     "qa:responsive": "node scripts/check-responsive.mjs",
     "public-safety:check": "node scripts/check-public-safety.mjs",
     "public-safety:install": "git config core.hooksPath .githooks",
-    "check": "npm run public-safety:check && npm run contract:check && npm run build:clean && npm run test:built && npm run eval:built && npm run demo:attacks:built && npm run demo:check && npm run proof:check:built && npm run qa:responsive",
-    "action": "npm run build --silent && node dist/src/cli.js"
+    "check": "npm run public-safety:check && npm run counts:check && npm run contract:check && npm run build:clean && npm run test:built && npm run eval:built && npm run demo:attacks:built && npm run demo:check && npm run proof:check:built && npm run qa:responsive",
+    "action": "npm run build --silent && node dist/src/cli.js",
+    "counts:check": "node scripts/check-public-counts.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.31.0",
