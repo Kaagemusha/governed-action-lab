@@ -4,7 +4,8 @@ The real handoff, end to end: [Context Layer Lab](https://kaagemusha.github.io/c
 answers what current evidence supports, then Governed Action Lab decides what
 may execute under that evidence, gets a human decision, executes, and proves
 it with a receipt. Every command below is copy-pasteable and every block of
-output is a real, unedited run of these two public repos side by side.
+output comes from a real run of these two public repos side by side; the one
+block shortened for length says so.
 
 ```bash
 git clone https://github.com/Kaagemusha/context-layer-lab.git

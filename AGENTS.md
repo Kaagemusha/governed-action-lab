@@ -25,7 +25,7 @@ CLI walkthrough. Deterministic tests and the attack demo use frozen clocks.
 - `src/policy.ts` classifies requests deterministically; never add model-based or
   natural-language policy classification.
 - `src/approval.ts` owns separately issued, exact, expiring, single-use grants.
-- `src/executor.ts` is the final shared gate. Preserve its signed-`decisionAt`
+- `src/executor.ts` is the final shared gate. Preserve its digest-bound-`decisionAt`
   recomputation and independent execution-clock evidence/state checks.
 - The host must supply `verifiedPrincipal`; do not derive it from tool input.
 - `src/adapters/synthetic-automation.ts` is the only mutating adapter and writes

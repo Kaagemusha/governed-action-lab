@@ -44,14 +44,16 @@ The deterministic suite exercises these bounded defenses:
   are single-use; changed arguments and consumed grants do not execute;
 - a host-supplied principal mismatch is rejected before state claims, approval
   consumption, or adapter calls;
-- execution recomputes policy at the signed `decisionAt`, while current evidence
+- execution recomputes policy at the digest-bound `decisionAt`, while current evidence
   age and content-hash target state are independently checked with the execution
   clock;
 - red actions have no executor path, runtime adapter identity must match the
   authorized target, and idempotency keys are bound to complete action digests;
 - MCP cannot mint approvals, CLI execution rejects inline approval, and an
   evaluated MCP mutation without a separately stored grant reaches no mutating
-  adapter;
+  adapter. This holds for an agent confined to the MCP tools: grant digests are
+  unkeyed, so a process that can write the approval store directly can forge a
+  grant. Keep the store outside the agent's filesystem reach;
 - the individual receipt verifier detects strict-schema violations and content
   mutation when the stored digest is not recomputed.
 

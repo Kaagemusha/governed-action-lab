@@ -109,7 +109,7 @@ test("file approval consumption is atomic under concurrency", async () => {
   );
 });
 
-test("operator provider rejects a decision with altered signed fields", async () => {
+test("operator provider rejects a decision with altered bound fields", async () => {
   const provider = new OperatorApprovalProvider(new MemoryApprovalStore(), clock);
   await assert.rejects(
     provider.issue(

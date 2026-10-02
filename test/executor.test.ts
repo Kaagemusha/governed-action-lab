@@ -254,7 +254,7 @@ test("yellow executes once with exact approval and verifies effect", async () =>
   assert.equal(state.adapter.executeCalls, 1);
 });
 
-test("a signed decision remains executable after the clock advances", async () => {
+test("a digest-bound decision remains executable after the clock advances", async () => {
   const action = request();
   const state = await setup(action);
   await new OperatorApprovalProvider(state.approvals, clock).issue(

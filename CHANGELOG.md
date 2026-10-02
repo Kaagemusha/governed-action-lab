@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 1.2.1 (2026-10-02)
 
 **Console redesign.** The public console now matches antoine.nutu.net: dark
 theme, the retry path first, a live five-step trace, a paper receipt whose
@@ -8,10 +8,25 @@ digest you can check and break, a forged-decision demo on the refused path,
 and the 11-attack table. Fixes Escape approving a retry after an earlier
 approval. No runtime, sample, or proof change.
 
+**Honest wording.** Receipts and grants are described as hash-bound and
+tamper-evident, not cryptographic or signed: digests are unkeyed SHA-256.
+The README and SECURITY.md now state that "the agent cannot create an
+approval" holds for an agent confined to the MCP tools, and that the approval
+store must stay outside the agent's filesystem reach. The README opens with
+the three-path scenario and a new preview image; the pair walkthrough no
+longer calls trimmed output unedited.
+
+**Hardening.** The console pages carry a Content Security Policy (same-origin
+scripts, styles, and data only), with the boot fallback moved out of inline
+script. CI checkouts no longer persist credentials. The package is marked
+private so it cannot be published to npm by accident. `@types/node` tracks
+the supported Node 22 runtime, zod is 4.6.5 in both labs, and `npm audit` is
+clean.
+
 ## 1.2.0 (2026-10-01)
 
-First release in this repository's current history. Earlier releases are
-summarized below.
+The repository's history was squashed into one commit when it was
+republished at 1.2.0; earlier releases are summarized below.
 
 - **Neutral sample names.** The bundled Context Layer Lab fixtures, browser
   sample data, and portable proof packet were regenerated from the

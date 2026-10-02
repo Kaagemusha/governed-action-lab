@@ -5,7 +5,7 @@
 ![36/36 eval cases](https://img.shields.io/badge/eval-36%2F36-brightgreen)
 ![11/11 attacks held](https://img.shields.io/badge/attacks-11%2F11%20held-brightgreen)
 
-[![The live console: the retry path approved once by a human, with its receipt and digest check](docs/media/og.png)](https://kaagemusha.github.io/governed-action-lab/)
+[![The live console: of three proposed actions, the read runs, the retry waits for one human approval, and the delete is refused](docs/media/og.png)](https://kaagemusha.github.io/governed-action-lab/)
 
 An agent's proposed action is not authorization. This is a small, inspectable
 reference implementation that keeps *can the tool act*, *does policy allow
@@ -18,11 +18,20 @@ interactive.
 
 ## The failure it prevents
 
+```text
+Docs Build failed at 08:40. At 09:10 the agent proposes three next steps:
+
+read Docs Build's failed run record          ->  allowed, runs now
+retry Docs Build in the sandbox              ->  held for one human approval
+delete Weekly Report's unpublished output    ->  refused by policy
+```
+
 An agent can hold a working tool and fresh evidence without holding authority
 to use that tool on this target, right now. Collapsing "can" and "may" into
 one model judgment call is how an agent talks itself into an action nobody
 approved. This repo keeps them apart with a closed action catalog, a
-deterministic policy gate, and approvals a model cannot mint for itself.
+deterministic policy gate, and approvals that none of the agent's tools can
+create.
 
 ## What this proves
 
@@ -74,11 +83,14 @@ them, with real output, is in
 ## Scope and limits
 
 **Status: reference implementation, not a production authorization system.**
-It demonstrates deterministic policy gates, non-mintable operator approvals,
-and cryptographic action receipts as a teaching and reference artifact. It
-does not provide production identity, RBAC, multi-tenancy, machine isolation,
-or a tamper-proof external log, and it has not been hardened against
-adversarial misuse. There is no production, network, credential, financial,
+It demonstrates deterministic policy gates, operator approvals the agent's
+tools cannot create, and hash-bound, tamper-evident action receipts as a
+teaching and reference artifact. Digests are unkeyed SHA-256, not signatures:
+they detect edits, but anything with write access to the approval store or
+the receipts can produce valid-looking ones, so a real deployment keeps those
+out of the agent's reach. It does not provide production identity, RBAC,
+multi-tenancy, machine isolation, or a tamper-proof external log, and it has
+not been hardened against adversarial misuse. There is no production, network, credential, financial,
 or deletion adapter, and there never will be one in this repository. See
 [`docs/architecture.md`](docs/architecture.md#threat-model-and-limits) for the
 full threat model.
