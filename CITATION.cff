@@ -12,8 +12,8 @@ authors:
 license: MIT
 repository-code: "https://github.com/Kaagemusha/governed-action-lab"
 url: "https://kaagemusha.github.io/governed-action-lab/"
-version: 1.2.3
-date-released: "2026-10-02"
+version: 1.2.4
+date-released: "2026-10-03"
 type: software
 keywords:
   - ai-agents

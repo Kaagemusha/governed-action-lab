@@ -192,6 +192,13 @@ try {
     await measure("read done");
     await act(`${click("path-retry")}; ${click("path-action")}; ${click("approve-confirm")}`);
     await measure("retry approved");
+    const retryOutcome = await send("Runtime.evaluate", {
+      expression: "document.getElementById('path-retry').closest('.path').querySelector('.path-outcome').textContent",
+      returnByValue: true,
+    });
+    if (!/Approved once/.test(retryOutcome.result.value ?? "")) {
+      throw new Error(`${width}px: after approval the retry row still reads "${retryOutcome.result.value}".`);
+    }
     await act(click("path-delete"));
     await measure("delete record");
     await act("document.getElementById('request-details').open = true");

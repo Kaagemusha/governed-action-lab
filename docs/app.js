@@ -58,7 +58,7 @@ const stateWord = (kind, text) => el("span", { class: "state" }, mark(kind), wor
 const clear = (node) => { node.replaceChildren(); return node; };
 const data = (text) => el("span", { class: "data" }, text);
 const shortHash = (h) => (typeof h === "string" && h.length > 12 ? `${h.slice(0, 8)}…${h.slice(-4)}` : String(h ?? ""));
-const short = (h) => data(shortHash(h));
+const short = (h) => el("span", { class: "data hash" }, shortHash(h));
 function dirRow(label, ...value) {
   return el("div", { class: "dir" },
     el("dt", { class: "dir-label" }, label),
@@ -148,8 +148,11 @@ function pathTitle(actionType, label) {
   if (actionType === "delete_preserved_output") return `Delete ${label}'s unpublished output`;
   return `${words(actionType)}: ${label}`;
 }
-function outcomeOf(decision) {
+function outcomeOf(decision, actionType) {
   if (decision.disposition === "allow") return { kind: "ok", text: "Allowed automatically" };
+  // Once you approve, the row says so instead of still asking for approval.
+  if (decision.disposition === "approval_required" && actionType === "retry_failed_lane"
+    && paths.retry_failed_lane.phase === "approved") return { kind: "ok", text: "Approved once by you" };
   if (decision.disposition === "approval_required") return { kind: "hold", text: "Needs your approval" };
   if (decision.disposition === "refuse") return { kind: "stop", text: "Refused by policy" };
   return { kind: "pending", text: words(decision.disposition) };
@@ -179,7 +182,7 @@ function renderPathRows() {
     const v = view(actionType);
     const row = $(id).closest(".path");
     row.querySelector(".path-title").textContent = pathTitle(actionType, v.label);
-    const o = outcomeOf(v.decision);
+    const o = outcomeOf(v.decision, actionType);
     clear(row.querySelector(".path-outcome")).append(mark(o.kind), word(o.kind, o.text));
   }
 }
@@ -460,6 +463,7 @@ function renderRules() {
 
 // ---- Render ----
 function render() {
+  renderPathRows();
   placeSelection();
   renderDetail();
   renderTrace();
@@ -468,7 +472,6 @@ function render() {
 }
 function renderAll() {
   renderHeader();
-  renderPathRows();
   render();
 }
 

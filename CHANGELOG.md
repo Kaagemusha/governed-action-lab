@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.2.4 (2026-10-03)
+
+**The console says what happened.** After you approve the retry, its row
+reads "Approved once by you" instead of still asking for approval, and the
+browser check now fails if it does not. A state hash no longer breaks across
+two lines, and on phones the highlight bar on the waiting step no longer
+touches its label.
+
+**Glama.** `glama.json` names the maintainer for the Glama MCP directory.
+
 ## 1.2.3 (2026-10-02)
 
 **No console warning under the security policy.** Zod probed `eval` on load,

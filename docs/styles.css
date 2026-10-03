@@ -209,7 +209,9 @@ a:hover { color: var(--blue-hover); }
 .trace > li > .t-side { display: flex; flex-direction: column; align-items: flex-end; gap: 0; }
 .trace > li.compact { min-height: 0; padding: 2px 0; }
 .trace > li.compact .t-label { color: var(--muted); font-size: var(--t-small); }
-.trace > li.is-current { background: var(--tint-blue); box-shadow: inset 3px 0 0 var(--blue); }
+/* The highlight extends left of the row, so its bar never touches the label. */
+.trace > li.is-current { background: var(--tint-blue); box-shadow: inset 3px 0 0 var(--blue); padding-left: var(--s2); margin-left: calc(-1 * var(--s2)); }
+.data.hash { white-space: nowrap; }
 @media (max-width: 479px) {
   .trace > li { grid-template-columns: 3.25rem 8px minmax(0, 1fr); }
   .trace::before { left: calc(3.25rem + var(--s3) + 3px); }
